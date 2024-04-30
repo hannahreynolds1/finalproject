@@ -4,19 +4,12 @@ library(stringr)
 library(tidyverse)
 library(ggmap)
 library(dplyr)
+library(haven)
 
-crime_data <- read_csv("/Users/hannahreynolds/Desktop/GitHub/finalproject/Crime_Data_from_2020_to_Present_20240418.csv")
 
-affordable_housing_data <- read_csv("/Users/hannahreynolds/Desktop/GitHub/finalproject/LAHD_Affordable_Housing_Projects_List__2003_to_Present__20240418.csv")
+irt_scores <- read_dta("/Users/hannahreynolds/Desktop/GitHub/finalproject/school/master/public_child_irt_scores_panel.dta")
 
-LA_shapefile <- st_read("/Users/hannahreynolds/Desktop/GitHub/finalproject/LAshapefile (1)/CAMS_ZIPCODE_PARCEL_SPECIFIC.shp")
+teacher_irt_scores <- read_dta("/Users/hannahreynolds/Desktop/GitHub/finalproject/school/master/public_teacher_irt_scores_panel.dta")
 
-hud_data <- read_csv("/Users/hannahreynolds/Desktop/GitHub/finalproject/hudPicture2023_573267.csv")
 
-crime_sf <- st_as_sf(crime_data, coords = c("LAT", "LON"), remove = FALSE, crs = 4326)
-
-LA_shapefile_sf <- st_as_sf(LA_shapefile, remove = FALSE, crs = 4326)
-
-sf_use_s2(false)
-
-crime_zip_merge <- st_join(LA_shapefile_sf, crime_sf,  join = st_intersects)
+public_child <-read_dta("/Users/hannahreynolds/Desktop/GitHub/finalproject/school/school2/public_child2.dta")

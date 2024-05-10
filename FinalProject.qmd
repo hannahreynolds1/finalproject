@@ -45,7 +45,7 @@ Our project focuses on the school surveys from the last round of data collection
 The following factors motivated our choice of the specific datasets from the school surveys:
 
 1.  The latest dataset from 2011 reinforces the local interpretability of our model.
-2.  The child roster contains detailed questions on household characteristics, student beliefs, student growth metrics, intrinsic motivation, school environment, and academic background.  
+2.  The child roster contains detailed questions on household characteristics, student beliefs, student growth metrics, intrinsic motivation, school environment, and academic background.
 
 Besides the round-specific dataset from 2011, we use the master student IRT (item response theory) test score dataset given our model predicts test scores based on student characteristics.
 
@@ -72,6 +72,7 @@ library(kknn)
 library(dplyr)
 library(haven)
 library(sf)
+library(readxl)
 ```
 
 ## Data Cleaning
@@ -87,6 +88,8 @@ irt_scores <- read_dta("/Users/hannahreynolds/Desktop/GitHub/finalproject/school
 scores <- merge(irt_scores, hh_characteristics,  by = "childcode") 
 
 pakistan_district_shape <- st_read("/Users/hannahreynolds/Desktop/GitHub/finalproject/pakistan_districts/pakistan_districts.shp")
+
+sample_schools <-read_excel("/Users/hannahreynolds/Downloads/gps_coordinates.xlsx")
 
 ```
 
@@ -112,27 +115,30 @@ scores_test <- testing(x = scores_split)
 punjab <- pakistan_district_shape[pakistan_district_shape$province_t == "Punjab", ]
 
 ggplot() +
-  geom_sf(data = pakistan_district_shape, fill = "lightgray") +  # Plot all districts of Pakistan
-  geom_sf(data = punjab, fill = "skyblue") +  # Highlight Punjab province with red color
+  geom_sf(data = pakistan_district_shape, fill = "lightgray") + 
+  geom_sf(data = punjab, fill = "#E34234") + 
   labs(title = "Map of Pakistan with Highlighted Punjab Province (Sampled Province)") +
   theme_minimal()
 ```
 
 ```{r}
-punjab <- pakistan_district_shape[pakistan_district_shape$province_t == "Punjab", ]
-
 desired_districts <- pakistan_district_shape[pakistan_district_shape$districts %in% c("Attock", "Rahim Yar Khan", "Faisalabad"), ]
 
 ggplot(data = pakistan_district_shape, aes(geometry = geometry)) +
-  geom_sf(data = punjab, fill = NA, color = "black") +
+  geom_sf(data = punjab, fill = "lightgray", color = "black") +
   geom_sf(data = desired_districts, aes(fill = districts)) +
   labs(title = "Map of Punjab Province (Sample Province) with Sample Districts Highlighted") +
   theme_minimal()
 ```
 
 ```{r}
-new_pakistan_shape <- st_read("/Users/hannahreynolds/Desktop/GitHub/finalproject/pakistan_districts/pakistan_districts.shp")
+attock <- pakistan_district_shape[pakistan_district_shape$districts == "Attock", ]
 
+ggplot() +
+  geom_sf(data = attock, fill = "lightgray", color = "black") +
+  geom_point(data = sample_schools, aes(x = longitude, y = latitude), color = "red") +
+  labs(title = "Map of Punjab Province (Sample Province) with Sample Districts Highlighted") +
+  theme_minimal()
 
 ```
 

@@ -29,7 +29,6 @@ Our main research questions are:
 
 1.  How do individual student attributes predict student learning outcomes in basic literacy and numeracy?
 
-
 2.  Are there specific attributes that have higher power than others in predicting student learning outcomes?
 
 Findings from this analysis will help identify students with below-average learning outcomes and formulate policy recommendations on interventions to improve educational quality. These interventions may include school-level programs such as foundational learning or targeted instruction programs to tailor support to students behind their grade levels, school grants and loans, and provision of education support services. Additionally, given student attributes correlated with household characteristics are predictive of learning outcomes, another consideration for high-impact interventions would be cash transfers to improve household-level economic status, leading to better learning outcomes and a sustainable change in the students learning trajectory.
@@ -47,11 +46,9 @@ The following factors motivated our choice of the specific datasets from the sch
 1.  The latest dataset from 2011 reinforces the local interpretability of our model.
 2.  The child roster contains detailed questions on household characteristics, student beliefs, student growth metrics, intrinsic motivation, school environment, and academic background.
 
-Besides the round-specific dataset from 2011, we use the master student IRT (item response theory) test score dataset given our model predicts test scores based on student characteristics.
+Besides the round-specific dataset from 2011, we use the master student IRT (item response theory) test score dataset given our model predicts test scores based on student characteristics. We accessed the specific datasets of interest from the public database on the [LEAPS website](https://www.leaps.hks.harvard.edu/data/leaps-longitudinal). After downloading the dataset, we saved the dataset on our local computer and added file paths to read and merge the datasets in R, as required.
 
-**Data Access**
-
-We accessed the specific datasets of interest from the public database on the [LEAPS website](https://www.leaps.hks.harvard.edu/data/leaps-longitudinal). After downloading the dataset, we saved the dataset on our local computer and added file paths to read and merge the datasets in R, as required.
+Additionally, we used geospatial data containing Pakistan’s geographical boundaries at three levels – national, provincial, and district. We sourced this data from the (Environmental Systems Research Institute, Inc.) database and merged it with district-level boundaries from a private website called [CARTO](https://carto.com/dataset/pakistan_districts). Moreover, we used private primary data containing GPS coordinates of a subset of public and private primary schools in the Attock district.
 
 # Data Wrangling
 
@@ -111,15 +108,19 @@ scores_test <- testing(x = scores_split)
 
 ## Geospatial Analysis of Pakistani Schools
 
+**Map 1** visualizes Pakistan with its provincial and district-level geographical boundaries. The red boundary indicates the Punjab province where the three sample districts and sample schools are located. Province is comparable to a state in Pakistan’s context.
+
 ```{r}
 punjab <- pakistan_district_shape[pakistan_district_shape$province_t == "Punjab", ]
 
 ggplot() +
   geom_sf(data = pakistan_district_shape, fill = "lightgray") + 
   geom_sf(data = punjab, fill = "#E34234") + 
-  labs(title = "Map of Pakistan with Highlighted Punjab Province (Sampled Province)") +
+  labs(title = "Map 1. Pakistan with Highlighted Punjab Province (Sampled Province)") +
   theme_minimal()
 ```
+
+**Map 2** zooms into the Punjab province and identifies the three sample districts. The northern district of Attock is highlighted in red. Faisalabad, highlighted in green, is the central district. Last, our third sample district, highlighted in blue, is in the southern part of Punjab.
 
 ```{r}
 desired_districts <- pakistan_district_shape[pakistan_district_shape$districts %in% c("Attock", "Rahim Yar Khan", "Faisalabad"), ]
@@ -127,9 +128,11 @@ desired_districts <- pakistan_district_shape[pakistan_district_shape$districts %
 ggplot(data = pakistan_district_shape, aes(geometry = geometry)) +
   geom_sf(data = punjab, fill = "lightgray", color = "black") +
   geom_sf(data = desired_districts, aes(fill = districts)) +
-  labs(title = "Map of Punjab Province (Sample Province) with Sample Districts Highlighted") +
+  labs(title = "Map 2. Punjab Province (Sample Province) with Sample Districts Highlighted") +
   theme_minimal()
 ```
+
+**Map 3** captures the spread of private and public schools at the village level in the northern district of Attock. We focus on only one village for two reasons. First, the village is the appropriate administrative unit for sampling for data collection or intervention randomization. Second, the village serves as a competitive market for the booming public and private schools. Interestingly, we can see only one public primary school in the middle of 7 private schools. This is because the public system provides only one primary school per village, while the existence of private schools indicates parental demand for both access to education and better quality of education.
 
 ```{r}
 attock <- pakistan_district_shape[pakistan_district_shape$districts == "Attock", ]
@@ -1285,3 +1288,29 @@ To determine the optimal model, we compared RMSE values across different models.
 The decision tree model offers both global and local interpretability, making it conducive to deriving actionable insights for educational policymakers and stakeholders. Globally, decision trees provide a lucid visualization of the decision-making process, spotlighting the most influential predictors and their relative significance. Locally, decision trees facilitate the interpretation of individual prediction pathways, empowering stakeholders to discern the specific factors contributing to students' Urdu test scores.
 
 # Discussion of Results
+
+# References
+
+Akmal, M., Ayub, U., Crawfurd, L., Hares, S., and Luiza, A. (2020). Lessons from a New Phone Survey in Pakistan.
+
+Andrabi, Tahir, Jishnu Das, Asim I. Khwaja, Tara Vishwanathan, and Tristan Zajonc. 2007. “Learning and Educational Achievements in Punjab Schools (LEAPS): Insights to Inform the Education Policy Debate.” *Harvard University*.
+
+Andrabi, Das, and Khwaja (2022). *The Learning and Educational Achievement in Pakistan Schools (LEAPS) Longitudinal Dataset, 2004-2011*, version 11-2022, released November 1st 2022
+
+Andrabi, T., Daniels, B., Das, J. 2020. Human Capital Accumulation and Disasters: Evidence from the Pakistan Earthquake of 2005. RISE Working Paper Series. 20/039. https://doi.org/10.35489/BSG-RISE-WP_2020/039
+
+Andrabi, Tahir, Jishnu Das, Asim I. Khwaja, Tara Vishwanathan, and Tristan Zajonc. 2007. “Learning and Educational Achievements in Punjab Schools (LEAPS): Insights to Inform the Education Policy Debate.” *Harvard University*.
+
+ASER-Pakistan 2019. (2020). Annual Status of Education Report. [aserpakistan.org/document/aser/2019/reports/national/ASER_National_2019.pdf](http://aserpakistan.org/document/aser/2019/reports/national/ASER_National_2019.pdf)
+
+ASER-Pakistan 2020. (20201. Annual Status of Education Report.
+
+ASER-Pakistan 2021. (2022). Annual Status of Education Report.
+
+CARTO. "Pakistan Districts". CARTO, <https://carto.com/dataset/pakistan_districts>.
+
+Hameed, Maleeha and Razzaque, Ayesha. (2022, September 26). Opinions, Behaviours and Frustrations: Lessons on Teacher Technology Use in Pakistan. Retrieved from <https://edtechhub.org/2022/09/26/opinions-behaviours-and-frustrations-lessons-on-teacher-technology-use-in-pakistan/>
+
+UNESCO. (2017). [unesco.org/news/617-million-children-and-adolescents-not-getting-minimum-reading-and-math](https://en.unesco.org/news/617-million-children-and-adolescents-not-getting-minimum-reading-and-math)
+
+World Bank. (2019). <https://www.worldbank.org/en/topic/education/brief/learning-poverty>

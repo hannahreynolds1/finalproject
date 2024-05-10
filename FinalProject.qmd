@@ -45,6 +45,8 @@ irt_scores <- read_dta("/Users/hannahreynolds/Desktop/GitHub/finalproject/school
 
 scores <- merge(irt_scores, hh_characteristics,  by = "childcode") 
 
+pakistan_shape <- st_read("/Users/hannahreynolds/Desktop/GitHub/finalproject/gadm36_PAK_3.shp")
+
 ```
 
 ## Create Testing & Training Data
@@ -64,6 +66,13 @@ scores_test <- testing(x = scores_split)
 # Exploratory Data Analysis
 
 ## Geospatial Analysis of Pakistani Schools
+
+```{r}
+ggplot(data = pakistan_shape, aes(geometry = geometry)) +
+  geom_sf() +
+  labs(title = "Map of Pakistan") +
+  theme_minimal()
+```
 
 ## Data Visualization
 

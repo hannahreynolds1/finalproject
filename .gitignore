@@ -7,3 +7,7 @@
 *.7z
 *.shp
 *.shx
+*.cpg
+*.dbf
+*.prj
+*.zip

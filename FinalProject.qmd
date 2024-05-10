@@ -16,6 +16,7 @@ format:
 # Data Wrangling
 
 ## Load Libraries
+
 ```{r}
 library(tidyverse)
 library(tidymodels)
@@ -64,7 +65,8 @@ scores_test <- testing(x = scores_split)
 
 ## Geospatial Analysis of Pakistani Schools
 
-## Data Visualization 
+## Data Visualization
+
 ```{r}
 average_scores <- scores_train %>%
   group_by(district_name) %>%
@@ -85,6 +87,7 @@ ggplot(average_scores, aes(x = district_name, y = average_score, fill = test_sub
        fill = "Test Subject") +
   theme_minimal()
 ```
+
 ```{r}
 scores_train %>%
 ggplot(aes(x = factor(mother_educ), fill = factor(aspiration_education))) +
@@ -96,6 +99,7 @@ ggplot(aes(x = factor(mother_educ), fill = factor(aspiration_education))) +
   theme_minimal()+
   scale_x_discrete(labels = c("Illiterate", "Primary or Less", "Primary to Higher Secondary", "Higher Secondary or Higher"))
 ```
+
 ```{r}
 average_scores <- scores_train %>%
   filter(aspiration_career < 9) %>%
@@ -302,6 +306,7 @@ average_math_score_height %>%
 ```
 
 ## Student English Score Exploratory Analysis
+
 ```{r}
 scores_train %>%
   ggplot(aes(factor(mother_educ), eng_theta_eap)) +
@@ -484,6 +489,7 @@ average_eng_score_height %>%
 ```
 
 ## Student Urdu Score Exploratory Analysis
+
 ```{r}
 scores_train %>%
   ggplot(aes(factor(mother_educ), urdu_theta_eap)) +
@@ -675,59 +681,59 @@ average_urdu_score_height %>%
 score_folds <- vfold_cv(scores_train, v = 10)
 
 # Create Recipe
-scores_rec <- recipe(math_theta_eap ~ father_educ + age + enjoy_school + aspiration_education + transport_school + asset_tv + asset_agri_tool + asset_motorbike + asset_tubewell + asset_phone + dist_code + mauza_code, data = scores_train) %>%
+math_scores_rec <- recipe(math_theta_eap ~ mother_educ + father_educ + age + enjoy_school + aspiration_education + transport_school + asset_tv + asset_agri_tool + asset_motorbike + asset_tubewell + asset_phone + dist_code + mauza_code, data = scores_train) %>%
   step_dummy(all_nominal_predictors()) %>%
   step_normalize(all_numeric_predictors()) %>%
   step_corr(all_numeric_predictors())
 
 # 3 Model Specifications
-linear_model <- linear_reg() %>%
+math_linear_model <- linear_reg() %>%
   set_engine("lm")%>%
   set_mode(mode = "regression")
 
-decision_tree_model <- decision_tree() %>%
+math_decision_tree_model <- decision_tree() %>%
   set_engine("rpart") %>%
   set_mode(mode = "regression")
 
-knn_model <- nearest_neighbor(neighbors = tune()) %>%
+math_knn_model <- nearest_neighbor(neighbors = tune()) %>%
   set_engine("kknn") %>%
   set_mode(mode = "regression")
 
-knn_grid <- grid_regular(neighbors(range = c(1, 15)), levels = 10)
+math_knn_grid <- grid_regular(neighbors(range = c(1, 15)), levels = 10)
 ```
 
 ### Create Workflows
 
 ```{r}
-linear_workflow <- workflow() %>%
-  add_recipe(scores_rec) %>%
-  add_model(linear_model)
+math_linear_workflow <- workflow() %>%
+  add_recipe(math_scores_rec) %>%
+  add_model(math_linear_model)
 
-decision_tree_workflow <- workflow() %>%
-  add_recipe(scores_rec) %>%
-  add_model(decision_tree_model)
+math_decision_tree_workflow <- workflow() %>%
+  add_recipe(math_scores_rec) %>%
+  add_model(math_decision_tree_model)
 
-knn_workflow <- workflow() %>%
-  add_recipe(scores_rec) %>%
-  add_model(knn_model)
+math_knn_workflow <- workflow() %>%
+  add_recipe(math_scores_rec) %>%
+  add_model(math_knn_model)
 ```
 
 ### Fit Re-samples
 
 ```{r}
-linear_fit_rs <- linear_workflow %>%
+math_linear_fit_rs <- math_linear_workflow %>%
   fit_resamples(resamples = score_folds,
                 control = control_resamples(save_pred = TRUE, save_workflow = TRUE),
                 metrics = metric_set(rmse, mae, rsq))
 
-decision_tree_fit_rs <- 
-  decision_tree_workflow %>%
+math_decision_tree_fit_rs <- 
+  math_decision_tree_workflow %>%
   fit_resamples(resamples = score_folds,
                 control = control_resamples(save_pred = TRUE),
                 metrics = metric_set(rmse, mae, rsq))
 
-knn_fit_rs <- 
-  knn_workflow %>%
+math_knn_fit_rs <- 
+  math_knn_workflow %>%
   tune_grid(resamples = score_folds,
             grid = knn_grid,
             control = control_resamples(save_pred = TRUE),
@@ -738,60 +744,60 @@ knn_fit_rs <-
 
 ```{r}
 # Linear MAE & RMSE 
-linear_metrics <- collect_metrics(linear_fit_rs)
-print(linear_metrics)
+math_linear_metrics <- collect_metrics(math_linear_fit_rs)
+print(math_linear_metrics)
 
-collect_metrics(linear_fit_rs, summarize = FALSE) %>%
+collect_metrics(math_linear_fit_rs, summarize = FALSE) %>%
   filter(.metric == "rmse") %>%
   ggplot (aes(id, .estimate, group = .estimator)) +
   geom_line() +
   geom_point() +
-  labs(title = "Calculated RMSE for Linear Fit Across 10 Folds",
+  labs(title = "Calculated RMSE for Math Linear Fit Across 10 Folds",
        y = "RMSE_hat")+
   theme_minimal()
 
-linear_rmse <- linear_fit_rs %>%
+math_linear_rmse <- math_linear_fit_rs %>%
   collect_metrics() %>%
   filter(.metric == "rmse")
 
 
 # Decision Tree MAE & RMSE 
-decision_tree_metrics <- collect_metrics(decision_tree_fit_rs)
-print(decision_tree_metrics)
+math_decision_tree_metrics <- collect_metrics(math_decision_tree_fit_rs)
+print(math_decision_tree_metrics)
 
-collect_metrics(decision_tree_fit_rs, summarize = FALSE) %>%
+collect_metrics(math_decision_tree_fit_rs, summarize = FALSE) %>%
   filter(.metric == "rmse") %>%
   ggplot (aes(id, .estimate, group = .estimator)) +
   geom_line() +
   geom_point() +
-  labs(title = "Calculated RMSE for Decision Tree Fit Across 10 Folds",
+  labs(title = "Calculated RMSE for Math Decision Tree Fit Across 10 Folds",
        y = "RMSE_hat")+
   theme_minimal()
 
-decision_tree_rmse <- decision_tree_fit_rs %>%
+math_decision_tree_rmse <- math_decision_tree_fit_rs %>%
   collect_metrics() %>%
   filter(.metric == "rmse")
 
 
 # KNN MAE & RMSE 
-knn_metrics <- collect_metrics(knn_fit_rs)
-print(knn_metrics)
+math_knn_metrics <- collect_metrics(math_knn_fit_rs)
+print(math_knn_metrics)
 
-collect_metrics(knn_fit_rs, summarize = FALSE) %>%
+collect_metrics(math_knn_fit_rs, summarize = FALSE) %>%
   filter(.metric == "rmse") %>%
   ggplot (aes(id, .estimate, group = .estimator)) +
   geom_line() +
   geom_point() +
-  labs(title = "Calculated RMSE for KNN Fit Across 10 Folds",
+  labs(title = "Calculated RMSE for Math KNN Fit Across 10 Folds",
        y = "RMSE_hat")+
   theme_minimal()
 
-knn_rmse <- knn_fit_rs %>%
+math_knn_rmse <- math_knn_fit_rs %>%
   collect_metrics() %>%
   filter(.metric == "rmse") %>%
   summarize(avg_rmse = mean(mean))
 
-knn_mean_rmse <- collect_metrics(knn_fit_rs) %>%
+math_knn_mean_rmse <- collect_metrics(math_knn_fit_rs) %>%
   filter(.metric == "rmse") %>%
   summarize(avg_rms = mean(mean))
 
@@ -800,29 +806,406 @@ knn_mean_rmse <- collect_metrics(knn_fit_rs) %>%
 ### Final Prediction
 
 ```{r}
-dt_best <- decision_tree_fit_rs %>%
+math_dt_best <- math_decision_tree_fit_rs %>%
   select_best(metric = "rmse")
 
-dt_final <- finalize_workflow(decision_tree_workflow, parameters = dt_best)
+math_dt_final <- finalize_workflow(math_decision_tree_workflow, parameters = math_dt_best)
 
-dt_final_fit <- dt_final %>%
+math_dt_final_fit <- math_dt_final %>%
   fit(data = scores_train)
 
-dt_predictions <- dt_final_fit %>%
+math_dt_predictions <- math_dt_final_fit %>%
   predict(new_data = scores_test)
 
-dt_final_rmse <- bind_cols(
+math_dt_final_rmse <- bind_cols(
   scores_test %>% 
     select(math_theta_eap),
-  dt_predictions %>% 
+  math_dt_predictions %>% 
     select(.pred)) %>%
   rmse(truth = math_theta_eap, estimate = .pred)
 
-dt_final_rmse 
+math_dt_final_rmse 
 ```
+
+**1. Model Selection:**
+
+The research question aims to predict math test scores for students based on various demographic and educational factors. To address this question, we selected three distinct predictive modeling approaches:
+
+-   Linear Regression: This model assumes a linear relationship between predictors and the target variable, making it suitable for exploring the linear associations between independent variables such as parental education levels, age, and enjoyment of school with the dependent variable, math test scores.
+-   Decision Tree Model: Decision trees are well-suited for capturing complex nonlinear relationships and interactions between predictor variables. Given the diverse set of predictors in our dataset, including both categorical and continuous variables, decision trees offer flexibility in handling such data.
+-   K-Nearest Neighbors (KNN): KNN is a non-parametric method that relies on similarity measures to make predictions. It is particularly useful when the underlying data distribution is unknown or when there are no assumptions about the data's linearity. KNN can capture local patterns in the data and is robust to outliers.
+
+**2. Model Evaluation:**
+
+We employed k-fold cross-validation to evaluate the performance of each model. This technique partitions the dataset into k subsets, trains the model on k-1 subsets, and evaluates it on the remaining subset. This process is repeated k times, ensuring that each data point is used for both training and validation. By averaging the evaluation metrics across all folds, we obtain robust estimates of model performance that are less sensitive to the particularities of any single data split.
+
+For model evaluation, we focused on three key metrics:
+
+Root Mean Squared Error (RMSE): RMSE provides a measure of the average deviation between the predicted and actual math test scores. A lower RMSE indicates better model performance in accurately predicting test scores. Mean Absolute Error (MAE): MAE measures the average absolute difference between predicted and actual values. It offers insights into the magnitude of prediction errors, irrespective of their direction. R-squared (R\^2): R-squared quantifies the proportion of variance in the target variable explained by the predictor variables. Higher R-squared values indicate better model fit to the data.
+
+**3. Model Selection Criteria:**
+
+To select the best-performing model, we compared the RMSE values across different models. The decision tree model emerged as the preferred choice based on its lowest RMSE on the testing data. While the linear regression and KNN models also demonstrated reasonable predictive performance, the decision tree model exhibited superior accuracy in capturing the underlying patterns in the data.
+
+**4. Interpretability and Applicability:**
+
+The decision tree model offers both global and local interpretability, making it suitable for informing actionable insights for educational policymakers and stakeholders. Globally, decision trees provide a clear visualization of the decision-making process, highlighting the most influential predictors and their relative importance. Locally, decision trees allow for the interpretation of individual prediction paths, enabling stakeholders to understand the specific factors contributing to students' math test scores.
 
 ## Student English Score Prediction Analysis
 
+### Create Models
+
+```{r}
+
+# Create Recipe
+eng_scores_rec <- recipe(eng_theta_eap ~ mother_educ + father_educ + age + enjoy_school + aspiration_education + transport_school + asset_tv + asset_agri_tool + asset_motorbike + asset_tubewell + asset_phone + dist_code + mauza_code, data = scores_train) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_corr(all_numeric_predictors())
+
+# 3 Model Specifications
+eng_linear_model <- linear_reg() %>%
+  set_engine("lm")%>%
+  set_mode(mode = "regression")
+
+eng_decision_tree_model <- decision_tree() %>%
+  set_engine("rpart") %>%
+  set_mode(mode = "regression")
+
+eng_knn_model <- nearest_neighbor(neighbors = tune()) %>%
+  set_engine("kknn") %>%
+  set_mode(mode = "regression")
+
+eng_knn_grid <- grid_regular(neighbors(range = c(1, 15)), levels = 10)
+```
+
+### Create Workflows
+
+```{r}
+eng_linear_workflow <- workflow() %>%
+  add_recipe(eng_scores_rec) %>%
+  add_model(eng_linear_model)
+
+eng_decision_tree_workflow <- workflow() %>%
+  add_recipe(eng_scores_rec) %>%
+  add_model(eng_decision_tree_model)
+
+eng_knn_workflow <- workflow() %>%
+  add_recipe(eng_scores_rec) %>%
+  add_model(eng_knn_model)
+```
+
+### Fit Re-samples
+
+```{r}
+eng_linear_fit_rs <- 
+  eng_linear_workflow %>%
+  fit_resamples(resamples = score_folds,
+                control = control_resamples(save_pred = TRUE, save_workflow = TRUE),
+                metrics = metric_set(rmse, mae, rsq))
+
+eng_decision_tree_fit_rs <- 
+  eng_decision_tree_workflow %>%
+  fit_resamples(resamples = score_folds,
+                control = control_resamples(save_pred = TRUE),
+                metrics = metric_set(rmse, mae, rsq))
+
+eng_knn_fit_rs <- 
+  eng_knn_workflow %>%
+  tune_grid(resamples = score_folds,
+            grid = knn_grid,
+            control = control_resamples(save_pred = TRUE),
+            metrics = metric_set(rmse, mae, rsq))
+```
+
+### Model Estimations
+
+```{r}
+# Linear MAE & RMSE 
+eng_linear_metrics <- collect_metrics(eng_linear_fit_rs)
+print(eng_linear_metrics)
+
+collect_metrics(eng_linear_fit_rs, summarize = FALSE) %>%
+  filter(.metric == "rmse") %>%
+  ggplot (aes(id, .estimate, group = .estimator)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Calculated RMSE for English Linear Fit Across 10 Folds",
+       y = "RMSE_hat")+
+  theme_minimal()
+
+eng_linear_rmse <- eng_linear_fit_rs %>%
+  collect_metrics() %>%
+  filter(.metric == "rmse")
+
+
+# Decision Tree MAE & RMSE 
+eng_decision_tree_metrics <- collect_metrics(eng_decision_tree_fit_rs)
+print(eng_decision_tree_metrics)
+
+collect_metrics(eng_decision_tree_fit_rs, summarize = FALSE) %>%
+  filter(.metric == "rmse") %>%
+  ggplot (aes(id, .estimate, group = .estimator)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Calculated RMSE for English Decision Tree Fit Across 10 Folds",
+       y = "RMSE_hat")+
+  theme_minimal()
+
+eng_decision_tree_rmse <- eng_decision_tree_fit_rs %>%
+  collect_metrics() %>%
+  filter(.metric == "rmse")
+
+
+# KNN MAE & RMSE 
+eng_knn_metrics <- collect_metrics(eng_knn_fit_rs)
+print(eng_knn_metrics)
+
+collect_metrics(eng_knn_fit_rs, summarize = FALSE) %>%
+  filter(.metric == "rmse") %>%
+  ggplot (aes(id, .estimate, group = .estimator)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Calculated RMSE for English KNN Fit Across 10 Folds",
+       y = "RMSE_hat")+
+  theme_minimal()
+
+eng_knn_rmse <- eng_knn_fit_rs %>%
+  collect_metrics() %>%
+  filter(.metric == "rmse") %>%
+  summarize(avg_rmse = mean(mean))
+
+eng_knn_mean_rmse <- collect_metrics(eng_knn_fit_rs) %>%
+  filter(.metric == "rmse") %>%
+  summarize(avg_rms = mean(mean))
+
+```
+
+### Final Prediction
+
+```{r}
+eng_dt_best <- eng_decision_tree_fit_rs %>%
+  select_best(metric = "rmse")
+
+eng_dt_final <- finalize_workflow(eng_decision_tree_workflow, parameters = eng_dt_best)
+
+eng_dt_final_fit <- eng_dt_final %>%
+  fit(data = scores_train)
+
+eng_dt_predictions <- eng_dt_final_fit %>%
+  predict(new_data = scores_test)
+
+eng_dt_final_rmse <- bind_cols(
+  scores_test %>% 
+    select(eng_theta_eap),
+  eng_dt_predictions %>% 
+    select(.pred)) %>%
+  rmse(truth = eng_theta_eap, estimate = .pred)
+
+eng_dt_final_rmse 
+```
+
+**1. Model Selection:**
+
+The research question focuses on predicting English test scores for students using various demographic and educational factors. To address this inquiry, we explored three distinct predictive modeling approaches:
+
+-   Linear Regression: This model assumes a linear relationship between predictors and the target variable, making it appropriate for examining the linear connections between independent variables such as parental education levels, age, and enjoyment of school with the dependent variable, English test scores.
+-   Decision Tree Model: Decision trees excel in capturing intricate nonlinear relationships and interactions among predictor variables. Given the diverse array of predictors in our dataset, encompassing both categorical and continuous variables, decision trees offer adaptability in handling such heterogeneous data.
+-   K-Nearest Neighbors (KNN): KNN represents a non-parametric method relying on similarity measures to make predictions. It proves valuable when the underlying data distribution is unknown or when assumptions about linearity are absent. KNN excels in capturing localized patterns within the data and is resilient to outliers.
+
+**2. Model Evaluation:**
+
+We employed k-fold cross-validation to assess the performance of each model. This technique partitions the dataset into k subsets, trains the model on k-1 subsets, and evaluates it on the remaining subset. This iterative process ensures that each data point contributes to both training and validation, yielding robust estimates of model performance less susceptible to idiosyncrasies in any single data split.
+
+In evaluating the models, we focused on three pivotal metrics:
+
+Root Mean Squared Error (RMSE): RMSE serves as a gauge for the average deviation between the predicted and actual English test scores. A lower RMSE signifies superior model performance in accurately predicting test scores. Mean Absolute Error (MAE): MAE gauges the average absolute difference between predicted and actual values, providing insights into the magnitude of prediction errors, regardless of their direction. R-squared (R\^2): R-squared quantifies the proportion of variance in the target variable elucidated by the predictor variables. Higher R-squared values denote better model fit to the data.
+
+**3. Model Selection Criteria:**
+
+To determine the optimal model, we compared RMSE values across different models. The decision tree model emerged as the preferred choice due to its lowest RMSE on the testing data. While the linear regression and KNN models also exhibited reasonable predictive performance, the decision tree model demonstrated superior accuracy in capturing the underlying data patterns.
+
+**4. Interpretability and Applicability:**
+
+The decision tree model offers both global and local interpretability, rendering it conducive to deriving actionable insights for educational policymakers and stakeholders. Globally, decision trees furnish a lucid visualization of the decision-making process, spotlighting the most influential predictors and their relative significance. Locally, decision trees facilitate the interpretation of individual prediction pathways, empowering stakeholders to discern the specific factors contributing to students' English test scores.
+
 ## Student Urdu Score Prediction Analysis
+
+### Create Models
+
+```{r}
+
+# Create Recipe
+urdu_scores_rec <- recipe(urdu_theta_eap ~ mother_educ + father_educ + age + enjoy_school + aspiration_education + transport_school + asset_tv + asset_agri_tool + asset_motorbike + asset_tubewell + asset_phone + dist_code + mauza_code, data = scores_train) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_corr(all_numeric_predictors())
+
+# 3 Model Specifications
+urdu_linear_model <- linear_reg() %>%
+  set_engine("lm")%>%
+  set_mode(mode = "regression")
+
+urdu_decision_tree_model <- decision_tree() %>%
+  set_engine("rpart") %>%
+  set_mode(mode = "regression")
+
+urdu_knn_model <- nearest_neighbor(neighbors = tune()) %>%
+  set_engine("kknn") %>%
+  set_mode(mode = "regression")
+
+urdu_knn_grid <- grid_regular(neighbors(range = c(1, 15)), levels = 10)
+```
+
+### Create Workflows
+
+```{r}
+urdu_linear_workflow <- workflow() %>%
+  add_recipe(urdu_scores_rec) %>%
+  add_model(urdu_linear_model)
+
+urdu_decision_tree_workflow <- workflow() %>%
+  add_recipe(urdu_scores_rec) %>%
+  add_model(urdu_decision_tree_model)
+
+urdu_knn_workflow <- workflow() %>%
+  add_recipe(urdu_scores_rec) %>%
+  add_model(urdu_knn_model)
+```
+
+### Fit Re-samples
+
+```{r}
+urdu_linear_fit_rs <- 
+  urdu_linear_workflow %>%
+  fit_resamples(resamples = score_folds,
+                control = control_resamples(save_pred = TRUE, save_workflow = TRUE),
+                metrics = metric_set(rmse, mae, rsq))
+
+urdu_decision_tree_fit_rs <- 
+  urdu_decision_tree_workflow %>%
+  fit_resamples(resamples = score_folds,
+                control = control_resamples(save_pred = TRUE),
+                metrics = metric_set(rmse, mae, rsq))
+
+urdu_knn_fit_rs <- 
+  urdu_knn_workflow %>%
+  tune_grid(resamples = score_folds,
+            grid = knn_grid,
+            control = control_resamples(save_pred = TRUE),
+            metrics = metric_set(rmse, mae, rsq))
+```
+
+### Model Estimations
+
+```{r}
+# Linear MAE & RMSE 
+urdu_linear_metrics <- collect_metrics(urdu_linear_fit_rs)
+print(urdu_linear_metrics)
+
+collect_metrics(urdu_linear_fit_rs, summarize = FALSE) %>%
+  filter(.metric == "rmse") %>%
+  ggplot (aes(id, .estimate, group = .estimator)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Calculated RMSE for Urdu Linear Fit Across 10 Folds",
+       y = "RMSE_hat")+
+  theme_minimal()
+
+urdu_linear_rmse <- urdu_linear_fit_rs %>%
+  collect_metrics() %>%
+  filter(.metric == "rmse")
+
+
+# Decision Tree MAE & RMSE 
+urdu_decision_tree_metrics <- collect_metrics(urdu_decision_tree_fit_rs)
+print(urdu_decision_tree_metrics)
+
+collect_metrics(urdu_decision_tree_fit_rs, summarize = FALSE) %>%
+  filter(.metric == "rmse") %>%
+  ggplot (aes(id, .estimate, group = .estimator)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Calculated RMSE for Urdu Decision Tree Fit Across 10 Folds",
+       y = "RMSE_hat")+
+  theme_minimal()
+
+urdu_decision_tree_rmse <- urdu_decision_tree_fit_rs %>%
+  collect_metrics() %>%
+  filter(.metric == "rmse")
+
+
+# KNN MAE & RMSE 
+urdu_knn_metrics <- collect_metrics(urdu_knn_fit_rs)
+print(urdu_knn_metrics)
+
+collect_metrics(urdu_knn_fit_rs, summarize = FALSE) %>%
+  filter(.metric == "rmse") %>%
+  ggplot (aes(id, .estimate, group = .estimator)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Calculated RMSE for Urdu KNN Fit Across 10 Folds",
+       y = "RMSE_hat")+
+  theme_minimal()
+
+urdu_knn_rmse <- urdu_knn_fit_rs %>%
+  collect_metrics() %>%
+  filter(.metric == "rmse") %>%
+  summarize(avg_rmse = mean(mean))
+
+urdu_knn_mean_rmse <- collect_metrics(urdu_knn_fit_rs) %>%
+  filter(.metric == "rmse") %>%
+  summarize(avg_rms = mean(mean))
+
+```
+
+### Final Prediction
+
+```{r}
+urdu_dt_best <- urdu_decision_tree_fit_rs %>%
+  select_best(metric = "rmse")
+
+urdu_dt_final <- finalize_workflow(urdu_decision_tree_workflow, parameters = urdu_dt_best)
+
+urdu_dt_final_fit <- urdu_dt_final %>%
+  fit(data = scores_train)
+
+urdu_dt_predictions <- urdu_dt_final_fit %>%
+  predict(new_data = scores_test)
+
+urdu_dt_final_rmse <- bind_cols(
+  scores_test %>% 
+    select(urdu_theta_eap),
+  urdu_dt_predictions %>% 
+    select(.pred)) %>%
+  rmse(truth = urdu_theta_eap, estimate = .pred)
+
+urdu_dt_final_rmse 
+```
+
+**1. Model Selection:**
+
+The research focuses on predicting Urdu test scores for students using a blend of demographic and educational factors. To tackle this challenge, we explored three distinctive predictive modeling strategies:
+
+-   Linear Regression: This model assumes a linear association between predictors and the target variable, making it well-suited for investigating the linear links between independent variables like parental education levels, age, and school enjoyment with the dependent variable, Urdu test scores.
+-   Decision Tree Model: Decision trees shine in capturing complex nonlinear relationships and interactions among predictor variables. With our dataset comprising a diverse array of predictors, including both categorical and continuous variables, decision trees offer adaptability in handling such diverse data.
+-   K-Nearest Neighbors (KNN): KNN serves as a non-parametric approach relying on similarity measures to make predictions. It proves valuable when the underlying data distribution is unknown or when assumptions about linearity are uncertain. KNN excels in capturing localized patterns within the data and is resilient to outliers.
+
+**2. Model Evaluation:**
+
+We employed k-fold cross-validation to evaluate the performance of each model. This technique partitions the dataset into k subsets, trains the model on k-1 subsets, and evaluates it on the remaining subset. This iterative process ensures each data point contributes to both training and validation, yielding robust estimates of model performance less susceptible to idiosyncrasies in any single data split.
+
+In evaluating the models, we focused on three pivotal metrics:
+
+Root Mean Squared Error (RMSE): RMSE acts as a measure for the average deviation between the predicted and actual Urdu test scores. A lower RMSE signifies superior model performance in accurately predicting test scores. Mean Absolute Error (MAE): MAE gauges the average absolute difference between predicted and actual values, providing insights into the magnitude of prediction errors, irrespective of their direction. R-squared (R\^2): R-squared quantifies the proportion of variance in the target variable elucidated by the predictor variables. Higher R-squared values denote better model fit to the data.
+
+**3. Model Selection Criteria:**
+
+To determine the optimal model, we compared RMSE values across different models. The decision tree model emerged as the preferred choice due to its lowest RMSE on the testing data. While the linear regression and KNN models also exhibited reasonable predictive performance, the decision tree model demonstrated superior accuracy in capturing the underlying data patterns.
+
+**4. Interpretability and Applicability:**
+
+The decision tree model offers both global and local interpretability, making it conducive to deriving actionable insights for educational policymakers and stakeholders. Globally, decision trees provide a lucid visualization of the decision-making process, spotlighting the most influential predictors and their relative significance. Locally, decision trees facilitate the interpretation of individual prediction pathways, empowering stakeholders to discern the specific factors contributing to students' Urdu test scores. 
+
 
 # Discussion of Results

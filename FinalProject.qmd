@@ -13,10 +13,9 @@ format:
 
 # Data Sources
 
-# Data Wrangling 
+# Data Wrangling
 
 ## Load Libraries
-
 ```{r}
 library(tidyverse)
 library(tidymodels)
@@ -48,6 +47,7 @@ scores <- merge(irt_scores, hh_characteristics,  by = "childcode")
 ```
 
 ## Create Testing & Training Data
+
 ```{r}
 # Set seed before sampling
 set.seed(20211101)
@@ -65,108 +65,555 @@ scores_test <- testing(x = scores_split)
 ## Geospatial Analysis of Pakistani Schools
 
 ## Student Math Score Exploratory Analysis
+
 ```{r}
 scores_train %>%
   ggplot(aes(factor(mother_educ), math_theta_eap)) +
   geom_boxplot() +
-  labs(title = "Effect of Maternal Education Levels on Math Test Scores")+
-  theme_minimal()
+  labs(title = "Effect of Maternal Education Levels on Math Test Scores",
+       x = "Maternal Education Levels",
+       y = "Math Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Illiterate", "Primary or Less", "Primary to Higher Secondary", "Higher Secondary or Higher"))
+```
 
+```{r}
 scores_train %>%
   ggplot(aes(factor(father_educ), math_theta_eap)) +
   geom_boxplot() +
-  labs(title = "Effect of Paternal Education Levels on Math Test Scores")+
-  theme_minimal()
+  labs(title = "Effect of Paternal Education Levels on Math Test Scores",
+       x = "Paternal Education Levels",
+       y = "Math Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Illiterate", "Primary or Less", "Primary to Higher Secondary", "Higher Secondary or Higher"))
+```
 
-scores_train %>%
-  ggplot(aes(x= age, y=math_theta_eap))+
-  geom_point() +
-  labs(title = "Effect of Student Years of Education on Math Test Scores")+
-  theme_minimal()
+```{r}
+average_math_score_age <- scores_train %>%
+  group_by(age) %>%
+  summarize(avg_math_theta_eap = mean(math_theta_eap))
 
-scores_train %>%
-  ggplot(aes(x = enjoy_school, y = math_theta_eap)) +
-  geom_bar(stat = "identity") + 
-  labs(title = "Effect of Student Enjoying School on Math Test Scores")+
+average_math_score_age %>%
+  ggplot(aes(x = age, y = avg_math_theta_eap)) +
+  geom_line() +
+  labs(title = "Effect of Student Age on Average Math Test Scores",
+       x = "Student Age",
+       y = "Average Math Test Scores") +
   theme_minimal()
+```
 
+```{r}
+average_math_score_enjoy <- scores_train %>%
+  group_by(enjoy_school) %>%
+  summarize(avg_math_theta_eap = mean(math_theta_eap))
+
+average_math_score_enjoy %>%
+  ggplot(aes(x = enjoy_school, y = avg_math_theta_eap)) +
+  geom_bar(stat="identity") + 
+  labs(title = "Effect of Student Enjoying School on Math Test Scores",
+       x = "Does the Student Enjoy School",
+       y = "Average Math Test Scores")+
+  theme_minimal()
+```
+
+```{r}
 scores_train %>%
+  filter(!is.na(teacher_treat)) %>%
   ggplot(aes(factor(teacher_treat), math_theta_eap)) +
   geom_boxplot() +
-  labs(title = "Effect of Teacher Treatment on Math Test Scores")+
-  theme_minimal()
+  labs(title = "Effect of Teacher Treatment on Math Test Scores",
+       x = "My Teachers Treat Me Worse than Other Children",
+       y = "Math Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Completely Agree", "Agree", "Somewhat Agree", "Disagree", "Completely Disagree"))
+```
 
+```{r}
 scores_train %>%
+  filter(!is.na(peers_treat)) %>%
   ggplot(aes(factor(peers_treat), math_theta_eap)) +
   geom_boxplot() +
-  labs(title = "Effect of Peer Treatment on Math Test Scores")+
+  labs(title = "Effect of Peer Treatment on Math Test Scores",
+       x = "My Peers Tease Me at School",
+       y = "Math Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Completely Agree", "Agree", "Somewhat Agree", "Disagree", "Completely Disagree"))+
   theme_minimal()
+```
 
+```{r}
 scores_train %>%
   ggplot(aes(factor(aspiration_education), math_theta_eap)) +
   geom_boxplot() +
-  labs(title = "Effect of Student Education Aspiration on Math Test Scores")+
-  theme_minimal()
+  labs(title = "Effect of Student Education Aspiration on Math Test Scores",
+       x = "What is the Highest Level of Education You Would Like to Complete",
+       y = "Math Test Scores")+
+  theme_minimal() +
+  scale_x_discrete(labels = c("Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12", "Grade 13", "Grade 14", "Grade 15", "Grade 16"))
+```
 
+```{r}
 scores_train %>%
   ggplot(aes(factor(transport_school), math_theta_eap)) +
   geom_boxplot() +
-  labs(title = "Effect of Type of Transportation on Math Test Scores") +
-  theme_minimal()
+  labs(title = "Effect of Type of Transportation on Math Test Scores",
+       x = "Type of Transportation to School",
+       y = "Math Test Scores") +
+  theme_minimal() +
+  scale_x_discrete(labels = c("Walking", "Cycle", "Bus", "Motor Cycle", "Bullock Cart"))
+```
 
+```{r}
 scores_train %>%
   ggplot(aes(factor(asset_tv), math_theta_eap)) +
   geom_boxplot() +
-  labs(title = "Effect of Houshold Having a TV on Math Test Scores")+
-  theme_minimal()
+  labs(title = "Effect of Houshold Having a TV on Math Test Scores",
+       x = "Does the Household Own a TV",
+       y = "Math Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
 
+```{r}
 scores_train %>%
   ggplot(aes(factor(asset_agri_tool), math_theta_eap)) +
   geom_boxplot() +
-  labs(title = "Effect of Houshold Having Agricultural Tools on Math Test Scores")+
-  theme_minimal()
+  labs(title = "Effect of Houshold Having Agricultural Tools on Math Test Scores",
+       x = "Does the Household Own Agricultural Tools",
+       y = "Math Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
 
+```{r}
 scores_train %>%
   ggplot(aes(factor(asset_motorbike), math_theta_eap)) +
   geom_boxplot() +
-  labs(title = "Effect of Houshold Having a Motorbike on Math Test Scores")+
-  theme_minimal()
+  labs(title = "Effect of Houshold Having a Motorbike on Math Test Scores",
+       x = "Does the Household Own a Motorbike",
+       y = "Math Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
 
+```{r}
 scores_train %>%
   ggplot(aes(factor(asset_tubewell), math_theta_eap)) +
   geom_boxplot() +
-  labs(title = "Effect of Houshold Having a Tubewell on Math Test Scores")+
-  theme_minimal()
+  labs(title = "Effect of Houshold Having a Tubewell on Math Test Scores",
+       x = "Does the Household Own a Tubewell",
+       y = "Math Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
 
+```{r}
 scores_train %>%
   ggplot(aes(factor(asset_phone), math_theta_eap)) +
   geom_boxplot() +
-  labs(title = "Effect of Houshold Having a Phone on Math Test Scores")+
-  theme_minimal()
+  labs(title = "Effect of Houshold Having a Phone on Math Test Scores",
+       x = "Does the Household Own a Phone",
+       y = "Math Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
 
-scores_train %>%
-  ggplot(aes(factor(child_weight), math_theta_eap)) +
+```{r}
+average_math_score_weight <- scores_train %>%
+  group_by(child_weight) %>%
+  summarize(avg_math_theta_eap = mean(math_theta_eap))
+
+average_math_score_weight %>%
+  ggplot(aes(x = child_weight, y = avg_math_theta_eap)) +
   geom_point() +
-  labs(title = "Effect of Student Weight on Math Test Scores")+
+  labs(title = "Effect of Student Weight on Math Test Scores",
+       x = "Child Weight (kg)",
+       y = "Average Math Test Scores")+
   theme_minimal()
+```
 
-scores_train %>%
-  ggplot(aes(factor(child_height), math_theta_eap)) +
+```{r}
+average_math_score_height <- scores_train %>%
+  group_by(child_height) %>%
+  summarize(avg_math_theta_eap = mean(math_theta_eap))
+
+average_math_score_height %>%
+  ggplot(aes(x = child_height, y = avg_math_theta_eap)) +
   geom_point() +
-  labs(title = "Effect of Student Height on Math Test Scores") +
+  labs(title = "Effect of Student Height on Math Test Scores",
+       x = "Student Height (cm)",
+       y = "Average Math Test Scores")+
   theme_minimal()
-
 ```
 
 ## Student English Score Exploratory Analysis
+```{r}
+scores_train %>%
+  ggplot(aes(factor(mother_educ), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Maternal Education Levels on English Test Scores",
+       x = "Maternal Education Levels",
+       y = "English Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Illiterate", "Primary or Less", "Primary to Higher Secondary", "Higher Secondary or Higher"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(father_educ), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Paternal Education Levels on English Test Scores",
+       x = "Paternal Education Levels",
+       y = "English Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Illiterate", "Primary or Less", "Primary to Higher Secondary", "Higher Secondary or Higher"))
+```
+
+```{r}
+average_eng_score_age <- scores_train %>%
+  group_by(age) %>%
+  summarize(avg_eng_theta_eap = mean(eng_theta_eap))
+
+average_eng_score_age %>%
+  ggplot(aes(x = age, y = avg_eng_theta_eap)) +
+  geom_line() +
+  labs(title = "Effect of Student Age on Average English Test Scores",
+       x = "Student Age",
+       y = "Average English Test Scores") +
+  theme_minimal()
+```
+
+```{r}
+average_eng_score_enjoy <- scores_train %>%
+  group_by(enjoy_school) %>%
+  summarize(avg_eng_theta_eap = mean(eng_theta_eap))
+
+average_eng_score_enjoy %>%
+  ggplot(aes(x = enjoy_school, y = avg_eng_theta_eap)) +
+  geom_bar(stat="identity") + 
+  labs(title = "Effect of Student Enjoying School on English Test Scores",
+       x = "Does the Student Enjoy School",
+       y = "Average English Test Scores")+
+  theme_minimal()
+```
+
+```{r}
+scores_train %>%
+  filter(!is.na(teacher_treat)) %>%
+  ggplot(aes(factor(teacher_treat), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Teacher Treatment on English Test Scores",
+       x = "My Teachers Treat Me Worse than Other Children",
+       y = "English Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Completely Agree", "Agree", "Somewhat Agree", "Disagree", "Completely Disagree"))
+```
+
+```{r}
+scores_train %>%
+  filter(!is.na(peers_treat)) %>%
+  ggplot(aes(factor(peers_treat), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Peer Treatment on English Test Scores",
+       x = "My Peers Tease Me at School",
+       y = "English Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Completely Agree", "Agree", "Somewhat Agree", "Disagree", "Completely Disagree"))+
+  theme_minimal()
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(aspiration_education), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Student Education Aspiration on English Test Scores",
+       x = "What is the Highest Level of Education You Would Like to Complete",
+       y = "English Test Scores")+
+  theme_minimal() +
+  scale_x_discrete(labels = c("Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12", "Grade 13", "Grade 14", "Grade 15", "Grade 16"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(transport_school), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Type of Transportation on English Test Scores",
+       x = "Type of Transportation to School",
+       y = "English Test Scores") +
+  theme_minimal() +
+  scale_x_discrete(labels = c("Walking", "Cycle", "Bus", "Motor Cycle", "Bullock Cart"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_tv), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a TV on English Test Scores",
+       x = "Does the Household Own a TV",
+       y = "English Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_agri_tool), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having Agricultural Tools on English Test Scores",
+       x = "Does the Household Own Agricultural Tools",
+       y = "English Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_motorbike), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a Motorbike on English Test Scores",
+       x = "Does the Household Own a Motorbike",
+       y = "English Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_tubewell), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a Tubewell on English Test Scores",
+       x = "Does the Household Own a Tubewell",
+       y = "English Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_phone), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a Phone on English Test Scores",
+       x = "Does the Household Own a Phone",
+       y = "English Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+average_eng_score_weight <- scores_train %>%
+  group_by(child_weight) %>%
+  summarize(avg_eng_theta_eap = mean(eng_theta_eap))
+
+average_eng_score_weight %>%
+  ggplot(aes(x = child_weight, y = avg_eng_theta_eap)) +
+  geom_point() +
+  labs(title = "Effect of Student Weight on English Test Scores",
+       x = "Child Weight (kg)",
+       y = "Average English Test Scores")+
+  theme_minimal()
+```
+
+```{r}
+average_eng_score_height <- scores_train %>%
+  group_by(child_height) %>%
+  summarize(avg_eng_theta_eap = mean(eng_theta_eap))
+
+average_eng_score_height %>%
+  ggplot(aes(x = child_height, y = avg_eng_theta_eap)) +
+  geom_point() +
+  labs(title = "Effect of Student Height on English Test Scores",
+       x = "Child Height (cm)",
+       y = "Average English Test Scores")+
+  theme_minimal()
+```
 
 ## Student Urdu Score Exploratory Analysis
+```{r}
+scores_train %>%
+  ggplot(aes(factor(mother_educ), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Maternal Education Levels on Urdu Test Scores",
+       x = "Maternal Education Levels",
+       y = "Urdu Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Illiterate", "Primary or Less", "Primary to Higher Secondary", "Higher Secondary or Higher"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(father_educ), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Paternal Education Levels on Urdu Test Scores",
+       x = "Paternal Education Levels",
+       y = "Urdu Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Illiterate", "Primary or Less", "Primary to Higher Secondary", "Higher Secondary or Higher"))
+```
+
+```{r}
+average_urdu_score_age <- scores_train %>%
+  group_by(age) %>%
+  summarize(avg_urdu_theta_eap = mean(urdu_theta_eap))
+
+average_urdu_score_age %>%
+  ggplot(aes(x = age, y = avg_urdu_theta_eap)) +
+  geom_line() +
+  labs(title = "Effect of Student Age on Average Urdu Test Scores",
+        x = "Student Age",
+       y = "Average Urdu Test Scores") +
+  theme_minimal()
+```
+
+```{r}
+average_urdu_score_enjoy <- scores_train %>%
+  group_by(enjoy_school) %>%
+  summarize(avg_urdu_theta_eap = mean(urdu_theta_eap))
+
+average_urdu_score_enjoy %>%
+  ggplot(aes(x = enjoy_school, y = avg_urdu_theta_eap)) +
+  geom_bar(stat="identity") + 
+  labs(title = "Effect of Student Enjoying School on Urdu Test Scores",
+       x = "Does the Student Enjoy School",
+       y = "Average Urdu Test Scores")+
+  theme_minimal()
+```
+
+```{r}
+scores_train %>%
+  filter(!is.na(teacher_treat)) %>%
+  ggplot(aes(factor(teacher_treat), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Teacher Treatment on Urdu Test Scores",
+       x = "My Teachers Treat Me Worse than Other Children",
+       y = "Urdu Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Completely Agree", "Agree", "Somewhat Agree", "Disagree", "Completely Disagree"))
+```
+
+```{r}
+scores_train %>%
+  filter(!is.na(peers_treat)) %>%
+  ggplot(aes(factor(peers_treat), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Peer Treatment on Urdu Test Scores",
+       x = "My Peers Tease Me at School",
+       y = "Urdu Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Completely Agree", "Agree", "Somewhat Agree", "Disagree", "Completely Disagree"))+
+  theme_minimal()
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(aspiration_education), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Student Education Aspiration on Urdu Test Scores",
+       x = "What is the Highest Level of Education You Would Like to Complete",
+       y = "Urdu Test Scores")+
+  theme_minimal() +
+  scale_x_discrete(labels = c("Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12", "Grade 13", "Grade 14", "Grade 15", "Grade 16"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(transport_school), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Type of Transportation on Urdu Test Scores",
+       x = "Type of Transportation to School",
+       y = "Urdu Test Scores") +
+  theme_minimal() +
+  scale_x_discrete(labels = c("Walking", "Cycle", "Bus", "Motor Cycle", "Bullock Cart"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_tv), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a TV on Urdu Test Scores",
+       x = "Does the Household Own a TV",
+       y = "Urdu Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_agri_tool), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having Agricultural Tools on Urdu Test Scores",
+       x = "Does the Household Own Agricultural Tools",
+       y = "Urdu Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_motorbike), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a Motorbike on Urdu Test Scores",
+       x = "Does the Household Own a Motorbike",
+       y = "Urdu Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_tubewell), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a Tubewell on Urdu Test Scores",
+       x = "Does the Household Own a Tubewell",
+       y = "Urdu Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_phone), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a Phone on Urdu Test Scores",
+       x = "Does the Household Own a Phone",
+       y = "Urdu Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+average_urdu_score_weight <- scores_train %>%
+  group_by(child_weight) %>%
+  summarize(avg_urdu_theta_eap = mean(urdu_theta_eap))
+
+average_urdu_score_weight %>%
+  ggplot(aes(x = child_weight, y = avg_urdu_theta_eap)) +
+  geom_point() +
+  labs(title = "Effect of Student Weight on Urdu Test Scores",
+       x = "Child Weight (kg)",
+       y = "Average Urdu Test Scores")+
+  theme_minimal()
+```
+
+```{r}
+average_urdu_score_height <- scores_train %>%
+  group_by(child_height) %>%
+  summarize(avg_urdu_theta_eap = mean(urdu_theta_eap))
+
+average_urdu_score_height %>%
+  ggplot(aes(x = child_height, y = avg_urdu_theta_eap)) +
+  geom_point() +
+  labs(title = "Effect of Student Height on Urdu Test Scores",
+       x = "Student Height (cm)",
+       y = "Average Urdu Test Scores")+
+  theme_minimal()
+```
 
 # Data Analysis
 
 ## Student Math Score Prediction Analysis
 
 ### Create Models
+
 ```{r}
 score_folds <- vfold_cv(scores_train, v = 10)
 
@@ -193,6 +640,7 @@ knn_grid <- grid_regular(neighbors(range = c(1, 15)), levels = 10)
 ```
 
 ### Create Workflows
+
 ```{r}
 linear_workflow <- workflow() %>%
   add_recipe(scores_rec) %>%
@@ -207,7 +655,8 @@ knn_workflow <- workflow() %>%
   add_model(knn_model)
 ```
 
-### Fit Resamples
+### Fit Re-samples
+
 ```{r}
 linear_fit_rs <- linear_workflow %>%
   fit_resamples(resamples = score_folds,
@@ -229,6 +678,7 @@ knn_fit_rs <-
 ```
 
 ### Model Estimations
+
 ```{r}
 # Linear MAE & RMSE 
 linear_metrics <- collect_metrics(linear_fit_rs)
@@ -290,7 +740,8 @@ knn_mean_rmse <- collect_metrics(knn_fit_rs) %>%
 
 ```
 
-### Final Predicition 
+### Final Prediction
+
 ```{r}
 dt_best <- decision_tree_fit_rs %>%
   select_best(metric = "rmse")
@@ -316,6 +767,5 @@ dt_final_rmse
 ## Student English Score Prediction Analysis
 
 ## Student Urdu Score Prediction Analysis
-
 
 # Discussion of Results

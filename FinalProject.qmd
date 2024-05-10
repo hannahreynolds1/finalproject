@@ -25,7 +25,7 @@ We extend this finding to hypothesize that individual student attributes may be 
 knitr::include_graphics("/Users/maleehameed/Library/CloudStorage/Box-Box/Stata/data_science/diagram.png")
 ```
 
-Our main research question is:
+Our main research questions are:
 
 1.  How do individual student attributes predict student learning outcomes in basic literacy and numeracy?
 

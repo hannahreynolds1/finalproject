@@ -13,24 +13,309 @@ format:
 
 # Data Sources
 
-# Data Wrangling and Exploratory Data Analysis
+# Data Wrangling 
+
+## Load Libraries
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library (themis)
+library (rpart)
+library(yardstick)
+library(vip)
+library(ggplot2)
+library(rsample)
+library (recipes)
+library (parsnip)
+library(kknn)
+library(dplyr)
+library(haven)
+```
 
 ## Data Cleaning
 
+```{r}
+
+hh_characteristics <- read_dta("/Users/hannahreynolds/Downloads/public_child5_cleaned.dta")
+
+irt_scores <- read_dta("/Users/hannahreynolds/Desktop/GitHub/finalproject/school/master/public_child_irt_scores_panel.dta") %>%
+  filter(year == 5) %>%
+  select(-eng_theta_pv1, -eng_theta_pv2, -eng_theta_pv3, -eng_theta_pv4, -eng_theta_pv5, -eng_theta_mle, -eng_theta_mle_se, -math_theta_pv1, -math_theta_pv2, -math_theta_pv3, -math_theta_pv4, -math_theta_pv5, -math_theta_mle, -math_theta_mle_se, -urdu_theta_pv1, -urdu_theta_pv2, -urdu_theta_pv3, -urdu_theta_pv4, -urdu_theta_pv5, -urdu_theta_mle, -urdu_theta_mle_se)
+
+scores <- merge(irt_scores, hh_characteristics,  by = "childcode") 
+
+```
+
+## Create Testing & Training Data
+```{r}
+# Set seed before sampling
+set.seed(20211101)
+
+# Create a sample for predictive modelling
+scores_split <- initial_split(data = scores)
+
+scores_train <- training(x = scores_split)
+scores_test <- testing(x = scores_split)
+
+```
+
+# Exploratory Data Analysis
+
+## Geospatial Analysis of Pakistani Schools
+
 ## Student Math Score Exploratory Analysis
+```{r}
+scores_train %>%
+  ggplot(aes(factor(mother_educ), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Maternal Education Levels on Math Test Scores")+
+  theme_minimal()
+
+scores_train %>%
+  ggplot(aes(factor(father_educ), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Paternal Education Levels on Math Test Scores")+
+  theme_minimal()
+
+scores_train %>%
+  ggplot(aes(x= age, y=math_theta_eap))+
+  geom_point() +
+  labs(title = "Effect of Student Years of Education on Math Test Scores")+
+  theme_minimal()
+
+scores_train %>%
+  ggplot(aes(x = enjoy_school, y = math_theta_eap)) +
+  geom_bar(stat = "identity") + 
+  labs(title = "Effect of Student Enjoying School on Math Test Scores")+
+  theme_minimal()
+
+scores_train %>%
+  ggplot(aes(factor(teacher_treat), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Teacher Treatment on Math Test Scores")+
+  theme_minimal()
+
+scores_train %>%
+  ggplot(aes(factor(peers_treat), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Peer Treatment on Math Test Scores")+
+  theme_minimal()
+
+scores_train %>%
+  ggplot(aes(factor(aspiration_education), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Student Education Aspiration on Math Test Scores")+
+  theme_minimal()
+
+scores_train %>%
+  ggplot(aes(factor(transport_school), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Type of Transportation on Math Test Scores") +
+  theme_minimal()
+
+scores_train %>%
+  ggplot(aes(factor(asset_tv), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a TV on Math Test Scores")+
+  theme_minimal()
+
+scores_train %>%
+  ggplot(aes(factor(asset_agri_tool), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having Agricultural Tools on Math Test Scores")+
+  theme_minimal()
+
+scores_train %>%
+  ggplot(aes(factor(asset_motorbike), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a Motorbike on Math Test Scores")+
+  theme_minimal()
+
+scores_train %>%
+  ggplot(aes(factor(asset_tubewell), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a Tubewell on Math Test Scores")+
+  theme_minimal()
+
+scores_train %>%
+  ggplot(aes(factor(asset_phone), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a Phone on Math Test Scores")+
+  theme_minimal()
+
+scores_train %>%
+  ggplot(aes(factor(child_weight), math_theta_eap)) +
+  geom_point() +
+  labs(title = "Effect of Student Weight on Math Test Scores")+
+  theme_minimal()
+
+scores_train %>%
+  ggplot(aes(factor(child_height), math_theta_eap)) +
+  geom_point() +
+  labs(title = "Effect of Student Height on Math Test Scores") +
+  theme_minimal()
+
+```
 
 ## Student English Score Exploratory Analysis
 
-## Student Urdu Score Exploratory Analysis 
-
+## Student Urdu Score Exploratory Analysis
 
 # Data Analysis
 
 ## Student Math Score Prediction Analysis
 
+### Create Models
+```{r}
+score_folds <- vfold_cv(scores_train, v = 10)
+
+# Create Recipe
+scores_rec <- recipe(math_theta_eap ~ father_educ + age + enjoy_school + aspiration_education + transport_school + asset_tv + asset_agri_tool + asset_motorbike + asset_tubewell + asset_phone + dist_code + mauza_code, data = scores_train) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_corr(all_numeric_predictors())
+
+# 3 Model Specifications
+linear_model <- linear_reg() %>%
+  set_engine("lm")%>%
+  set_mode(mode = "regression")
+
+decision_tree_model <- decision_tree() %>%
+  set_engine("rpart") %>%
+  set_mode(mode = "regression")
+
+knn_model <- nearest_neighbor(neighbors = tune()) %>%
+  set_engine("kknn") %>%
+  set_mode(mode = "regression")
+
+knn_grid <- grid_regular(neighbors(range = c(1, 15)), levels = 10)
+```
+
+### Create Workflows
+```{r}
+linear_workflow <- workflow() %>%
+  add_recipe(scores_rec) %>%
+  add_model(linear_model)
+
+decision_tree_workflow <- workflow() %>%
+  add_recipe(scores_rec) %>%
+  add_model(decision_tree_model)
+
+knn_workflow <- workflow() %>%
+  add_recipe(scores_rec) %>%
+  add_model(knn_model)
+```
+
+### Fit Resamples
+```{r}
+linear_fit_rs <- linear_workflow %>%
+  fit_resamples(resamples = score_folds,
+                control = control_resamples(save_pred = TRUE, save_workflow = TRUE),
+                metrics = metric_set(rmse, mae, rsq))
+
+decision_tree_fit_rs <- 
+  decision_tree_workflow %>%
+  fit_resamples(resamples = score_folds,
+                control = control_resamples(save_pred = TRUE),
+                metrics = metric_set(rmse, mae, rsq))
+
+knn_fit_rs <- 
+  knn_workflow %>%
+  tune_grid(resamples = score_folds,
+            grid = knn_grid,
+            control = control_resamples(save_pred = TRUE),
+            metrics = metric_set(rmse, mae, rsq))
+```
+
+### Model Estimations
+```{r}
+# Linear MAE & RMSE 
+linear_metrics <- collect_metrics(linear_fit_rs)
+print(linear_metrics)
+
+collect_metrics(linear_fit_rs, summarize = FALSE) %>%
+  filter(.metric == "rmse") %>%
+  ggplot (aes(id, .estimate, group = .estimator)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Calculated RMSE for Linear Fit Across 10 Folds",
+       y = "RMSE_hat")+
+  theme_minimal()
+
+linear_rmse <- linear_fit_rs %>%
+  collect_metrics() %>%
+  filter(.metric == "rmse")
+
+
+# Decision Tree MAE & RMSE 
+decision_tree_metrics <- collect_metrics(decision_tree_fit_rs)
+print(decision_tree_metrics)
+
+collect_metrics(decision_tree_fit_rs, summarize = FALSE) %>%
+  filter(.metric == "rmse") %>%
+  ggplot (aes(id, .estimate, group = .estimator)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Calculated RMSE for Decision Tree Fit Across 10 Folds",
+       y = "RMSE_hat")+
+  theme_minimal()
+
+decision_tree_rmse <- decision_tree_fit_rs %>%
+  collect_metrics() %>%
+  filter(.metric == "rmse")
+
+
+# KNN MAE & RMSE 
+knn_metrics <- collect_metrics(knn_fit_rs)
+print(knn_metrics)
+
+collect_metrics(knn_fit_rs, summarize = FALSE) %>%
+  filter(.metric == "rmse") %>%
+  ggplot (aes(id, .estimate, group = .estimator)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Calculated RMSE for KNN Fit Across 10 Folds",
+       y = "RMSE_hat")+
+  theme_minimal()
+
+knn_rmse <- knn_fit_rs %>%
+  collect_metrics() %>%
+  filter(.metric == "rmse") %>%
+  summarize(avg_rmse = mean(mean))
+
+knn_mean_rmse <- collect_metrics(knn_fit_rs) %>%
+  filter(.metric == "rmse") %>%
+  summarize(avg_rms = mean(mean))
+
+```
+
+### Final Predicition 
+```{r}
+dt_best <- decision_tree_fit_rs %>%
+  select_best(metric = "rmse")
+
+dt_final <- finalize_workflow(decision_tree_workflow, parameters = dt_best)
+
+dt_final_fit <- dt_final %>%
+  fit(data = scores_train)
+
+dt_predictions <- dt_final_fit %>%
+  predict(new_data = scores_test)
+
+dt_final_rmse <- bind_cols(
+  scores_test %>% 
+    select(math_theta_eap),
+  dt_predictions %>% 
+    select(.pred)) %>%
+  rmse(truth = math_theta_eap, estimate = .pred)
+
+dt_final_rmse 
+```
+
 ## Student English Score Prediction Analysis
 
-## Student Urdu Score Prediction Analysis 
+## Student Urdu Score Prediction Analysis
 
 
-# Discussion of Results 
+# Discussion of Results

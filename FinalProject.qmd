@@ -22,14 +22,13 @@ However, we are interested in students’ observable attributes as a determinant
 We extend this finding to hypothesize that individual student attributes may be correlated with household characteristics, thus impacting student learning outcomes in basic literacy and numeracy. Individual student attributes include beliefs, growth metrics, intrinsic academic motivation, and career aspirations. Additionally, we explore individual student schooling history to determine if that impacts student learning outcomes.
 
 ```{r}
-knitr::include_graphics("/Users/maleehameed/Library/CloudStorage/Box-Box/Stata/data_science/diagram.png")
+knitr::include_graphics("/Users/hannahreynolds/Downloads/diagram.png")
 ```
 
 Our main research questions are:
 
 1.  How do individual student attributes predict student learning outcomes in basic literacy and numeracy?
 
-<!-- -->
 
 2.  Are there specific attributes that have higher power than others in predicting student learning outcomes?
 

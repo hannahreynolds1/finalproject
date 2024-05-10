@@ -1,0 +1,36 @@
+---
+title: "Data Science for Public Policy"
+subtitle: "Final Project"
+author: "Ritwika Rituparna - rr1264, Hannah Reynolds - hjr45, Maleeha Hameed - mh2203"
+execute:
+  warning: false
+format:
+  html:
+    embed-resources: true
+---
+
+# Background and Literature Review
+
+# Data Sources
+
+# Data Wrangling and Exploratory Data Analysis
+
+## Data Cleaning
+
+## Student Math Score Exploratory Analysis
+
+## Student English Score Exploratory Analysis
+
+## Student Urdu Score Exploratory Analysis 
+
+
+# Data Analysis
+
+## Student Math Score Prediction Analysis
+
+## Student English Score Prediction Analysis
+
+## Student Urdu Score Prediction Analysis 
+
+
+# Discussion of Results 

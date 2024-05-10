@@ -19,19 +19,14 @@ Low learning levels and within-the-classroom inequality can be attributed to wid
 
 However, we are interested in students’ observable attributes as a determinant of student learning outcomes. Evidence suggests that students from wealthier households were more likely and able to have better learning outcomes, while children from poorer households were at a distinct disadvantage. Not only did they have less guidance and access to educated people in the home to help them learn, but the digital divide also meant they were 55 percent less likely to use technology for learning (Akmal et al., 2020). This variation in parental capability to facilitate learning exacerbates ‘within the classroom’ learning inequality.
 
-We extend this finding to hypothesize that individual student attributes may be correlated with household characteristics, thus impacting student learning outcomes in basic literacy and numeracy (as illustrated in the diagram below). Individual student attributes include beliefs, growth metrics, intrinsic academic motivation, and career aspirations. Additionally, we explore individual student schooling history to determine if that impacts student learning outcomes.
-
-```{r}
-knitr::include_graphics("/Users/maleehameed/Library/CloudStorage/Box-Box/Stata/data_science/diagram.png")
-```
+We extend this finding to hypothesize that individual student attributes may be correlated with household characteristics, thus impacting student learning outcomes in basic literacy and numeracy. Individual student attributes include beliefs, growth metrics, intrinsic academic motivation, and career aspirations. Additionally, we explore individual student schooling history to determine if that impacts student learning outcomes.
 
 Our main research question is:
 
 1.  How do individual student attributes predict student learning outcomes in basic literacy and numeracy?
 
-```{=html}
 <!-- -->
-```
+
 2.  Are there specific attributes that have higher power than others in predicting student learning outcomes?
 
 Findings from this analysis will help identify students with below-average learning outcomes and formulate policy recommendations on interventions to improve educational quality. These interventions may include school-level programs such as foundational learning or targeted instruction programs to tailor support to students behind their grade levels, school grants and loans, and provision of education support services. Additionally, given student attributes correlated with household characteristics are predictive of learning outcomes, another consideration for high-impact interventions would be cash transfers to improve household-level economic status, leading to better learning outcomes and a sustainable change in the students learning trajectory.

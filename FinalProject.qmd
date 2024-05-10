@@ -64,6 +64,60 @@ scores_test <- testing(x = scores_split)
 
 ## Geospatial Analysis of Pakistani Schools
 
+## Data Visualization 
+```{r}
+average_scores <- scores_train %>%
+  group_by(district_name) %>%
+  summarize(avg_english = mean(eng_theta_eap, na.rm = TRUE),
+            avg_math = mean(math_theta_eap, na.rm = TRUE),
+            avg_urdu = mean(urdu_theta_eap, na.rm = TRUE))
+
+average_scores <- tidyr::pivot_longer(average_scores, 
+                                      cols = c(avg_english, avg_math, avg_urdu),
+                                      names_to = "test_subject",
+                                      values_to = "average_score")
+
+ggplot(average_scores, aes(x = district_name, y = average_score, fill = test_subject)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Average Test Scores by School District",
+       x = "School District",
+       y = "Average Score",
+       fill = "Test Subject") +
+  theme_minimal()
+```
+```{r}
+scores_train %>%
+ggplot(aes(x = factor(mother_educ), fill = factor(aspiration_education))) +
+  geom_bar(position = "dodge") +
+  labs(title = "Relationship Between Mother Education and Student Education Aspiration",
+       x = "Mother Education",
+       y = "Count",
+       fill = "Student Education Aspiration (Grade Level)") +
+  theme_minimal()+
+  scale_x_discrete(labels = c("Illiterate", "Primary or Less", "Primary to Higher Secondary", "Higher Secondary or Higher"))
+```
+```{r}
+average_scores <- scores_train %>%
+  filter(aspiration_career < 9) %>%
+  group_by(aspiration_career) %>%
+  summarize(avg_english = mean(eng_theta_eap, na.rm = TRUE),
+            avg_math = mean(math_theta_eap, na.rm = TRUE),
+            avg_urdu = mean(urdu_theta_eap, na.rm = TRUE))
+
+average_scores <- tidyr::pivot_longer(average_scores, 
+                                      cols = c(avg_english, avg_math, avg_urdu),
+                                      names_to = "test_subject",
+                                      values_to = "average_score")
+average_scores %>%
+ggplot(aes(x = factor(aspiration_career, labels = c("Teacher", "Doctor", "Army Forces", "Government Employ", "Private Employ", "Engineer", "Politician", "Farmer")), y = average_score, fill = test_subject)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Average Test Scores by Student Career Aspiration",
+       x = "Students' Career Aspiration",
+       y = "Average Score",
+       fill = "Test Subject") +
+  theme_minimal()
+```
+
 ## Student Math Score Exploratory Analysis
 
 ```{r}
@@ -90,6 +144,7 @@ scores_train %>%
 
 ```{r}
 average_math_score_age <- scores_train %>%
+  filter(age > 4) %>%
   group_by(age) %>%
   summarize(avg_math_theta_eap = mean(math_theta_eap))
 
@@ -271,6 +326,7 @@ scores_train %>%
 
 ```{r}
 average_eng_score_age <- scores_train %>%
+  filter(age > 4) %>%
   group_by(age) %>%
   summarize(avg_eng_theta_eap = mean(eng_theta_eap))
 
@@ -452,6 +508,7 @@ scores_train %>%
 
 ```{r}
 average_urdu_score_age <- scores_train %>%
+  filter(age > 4) %>%
   group_by(age) %>%
   summarize(avg_urdu_theta_eap = mean(urdu_theta_eap))
 

@@ -11,7 +11,7 @@ format:
 
 # Background and Literature Review
 
-A severe student learning crisis plagues most low-income countries (LICs) despite rising school enrollments globally. Average learning is low with high learning inequality. In 2017, 617 million children across the globe did not achieve Minimum Proficiency Levels in reading and math; in Central and South Asia, this proportion stood at an alarming 81% of all children (UNESCO 2017). Outcomes in reading are not better, as only 53% of children in LICs learn to read a paragraph by age 10 (World Bank, 2019). More relevant to this project’s context, only 27% of Grade 3 children in rural Pakistan can read a sentence in a local language, and less than 22% can perform simple arithmetic operations (ASER 2020). 
+A severe student learning crisis plagues most low-income countries (LICs) despite rising school enrollments globally. Average learning is low with high learning inequality. In 2017, 617 million children across the globe did not achieve Minimum Proficiency Levels in reading and math; in Central and South Asia, this proportion stood at an alarming 81% of all children (UNESCO 2017). Outcomes in reading are not better, as only 53% of children in LICs learn to read a paragraph by age 10 (World Bank, 2019). More relevant to this project’s context, only 27% of Grade 3 children in rural Pakistan can read a sentence in a local language, and less than 22% can perform simple arithmetic operations (ASER 2020).
 
 More relevant to this project’s context, Pakistan’s primary education systems are plagued with an even severe learning crisis. Low learning levels and high within-the-classroom learning inequality characterize primary classrooms (Hameed and Razzaque, 2022). Forty-four percent of school-going grade 5 students cannot read a simple sentence and only 51 percent can perform simple arithmetic operations (ASER, 2021). Moreover, learning progress has been critically slow in that only 15% more primary-age girls mastered reading a sentence between 2009 and 2019 (ASER, 2019). Findings from the study on the aftermath of the Pakistan earthquake of 2005 explain the long-term impact of learning gaps. Four years later, earthquake-hit children had lost 1.5 to 2 years of learning, given only 14 weeks of school closures. These learning gaps translated into 15% lower annual earnings, impacting children’s life outcomes (Andrabi et al., 2021).
 
@@ -145,11 +145,10 @@ attock_schools <- school_gps[school_gps$`Original LEAPS District` == "ATK",]
 
 ggplot() +
   geom_sf(data = attock, fill = "lightgrey", color = "black") +
-  geom_point(data = attock_schools, aes(x = Longitude, y = Latitude), color = "red") +
+  geom_point(data = attock_schools, aes(x = Longitude, y = Latitude), color = "coral2") +
   labs(title = "Map 3. Sample Schools across Attock District", x = "", y = "") +
   theme_minimal() +
   coord_sf(lims_method = "geometry_bbox")
-
 ```
 
 ```{r}
@@ -159,11 +158,10 @@ fsd_schools <- school_gps[school_gps$`Original LEAPS District` == "FSD",]
 
 ggplot() +
   geom_sf(data = faisalabad, fill = "lightgrey", color = "black") +
-  geom_point(data = fsd_schools, aes(x = Longitude, y = Latitude), color = "red") +
+  geom_point(data = fsd_schools, aes(x = Longitude, y = Latitude), color = "green3") +
   labs(title = "Map 4. Sample Schools across Faisalabad District",  x = "", y = "") +
   theme_minimal() +
   coord_sf(lims_method = "geometry_bbox")
-
 ```
 
 ```{r}
@@ -173,7 +171,7 @@ ryk_schools <- school_gps[school_gps$`Original LEAPS District` == "RYK",]
 
 ggplot() +
   geom_sf(data = rahimyarkhan, fill = "lightgrey", color = "black") +
-  geom_point(data = ryk_schools, aes(x = Longitude, y = Latitude), color = "red") +
+  geom_point(data = ryk_schools, aes(x = Longitude, y = Latitude), color = "dodgerblue") +
   labs(title = "Map 5. Sample Schools across Rahim Yar Khan District",  x = "", y = "") +
   theme_minimal() +
   coord_sf(lims_method = "geometry_bbox")
@@ -1321,9 +1319,31 @@ To determine the optimal model, we compared RMSE values across different models.
 
 The decision tree model offers both global and local interpretability, making it conducive to deriving actionable insights for educational policymakers and stakeholders. Globally, decision trees provide a lucid visualization of the decision-making process, spotlighting the most influential predictors and their relative significance. Locally, decision trees facilitate the interpretation of individual prediction pathways, empowering stakeholders to discern the specific factors contributing to students' Urdu test scores.
 
-# Discussion of Results
+# Discussion of Results and Conclusion
 
+## Interpretation of Results:
 
+Our analysis aimed to investigate the relationship between individual student attributes (including household characteristics) and student learning outcomes in basic literacy and numeracy. Utilizing predictive modeling techniques, we developed models to predict math, English, and Urdu test scores based on household incomes. We used various candidate models, including linear regression, decision tree, and K-nearest neighbors (KNN). However, our findings consistently indicate that the decision tree model is the best model for each prediction task. It is important to note that all models yielded relatively high Root Mean Squared Error (RMSE) values, indicating suboptimal predictive accuracy.
+
+## Implications for the Research Question:
+
+The results of our analysis shed light on the complex dynamics underlying student learning outcomes in low-income settings, particularly in rural areas of Pakistan. While household incomes serve as crucial predictors of educational attainment, our study suggests that the predictive models developed may not adequately capture the nuanced relationships between student attributes (including household characteristics) and student performance in literacy and numeracy assessments. This highlights the need for further exploration and refinement of modeling techniques to better understand and predict learning outcomes in such contexts.
+
+Moreover, the relatively high RMSE values observed in our models underscore the challenges associated with accurately predicting student test scores based solely on student attributes including household characteristics. This suggests that other factors beyond socioeconomic status may significantly influence educational outcomes, including but not limited to, quality of instruction, access to educational resources, and cultural factors. As mentioned in Section 1. Background, there may be other school-level and political economy factors contributing to poor student learning outcomes.  Therefore, future research endeavors should adopt a more comprehensive approach, considering a broader range of predictors and employing advanced modeling techniques to enhance predictive accuracy.
+
+## Limitations of Analysis:
+
+Our analysis is subject to several limitations that warrant consideration. Firstly, the use of individual student attributes as the sole predictor variable may oversimplify the multifaceted nature of socioeconomic status and its impact on student learning outcomes. Additionally, the relatively small sample size and geographical focus on rural areas of Punjab province may limit the generalizability of our findings to other regions or demographic groups within Pakistan.
+
+Furthermore, the high RMSE values obtained in our predictive models suggest potential deficiencies in the underlying data quality or model specification. Despite efforts to incorporate detailed information on household characteristics and student attributes, there may exist unobserved variables or measurement errors that contribute to the observed discrepancies between predicted and actual test scores.
+
+## Areas for Potential Future Research:
+
+Moving forward, future research endeavors can aim to address the identified limitations and build upon the findings of this study. Specifically, there is a need for more comprehensive data collection efforts encompassing a broader range of predictors, including school-level factors, teacher quality, and parental involvement in education. Moreover, incorporating qualitative research methods such as interviews and focus groups could provide deeper insights into the socio-cultural dynamics influencing student learning outcomes.
+
+Additionally, exploring alternative modeling approaches, such as ensemble methods or deep learning techniques, may offer improved predictive accuracy and robustness. Furthermore, a time-series analysis of the longitudinal study tracking students' educational trajectories over time could elucidate the long-term effects of household characteristics on educational attainment and socioeconomic mobility.
+
+In conclusion, while our analysis provides valuable insights into the relationship between individual student attributes and student learning outcomes in rural Pakistan, it also underscores the complexity and multifactorial nature of educational achievement. By addressing the limitations highlighted and embracing interdisciplinary approaches, future research endeavors can contribute to the development of more effective interventions aimed at improving educational quality and promoting equitable access to learning opportunities.
 
 # References
 

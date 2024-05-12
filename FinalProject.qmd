@@ -88,6 +88,7 @@ pakistan_district_shape <- st_read("/Users/hannahreynolds/Desktop/GitHub/finalpr
 
 sample_schools <-read_excel("/Users/hannahreynolds/Downloads/gps_coordinates.xlsx")
 
+school_gps <-read_excel("/Users/ritwika.rituparna/Documents/Georgetown/Spring 2024/Intro to Data Science/finalproject/Data/GPS_List.xlsx")
 ```
 
 ## Create Testing & Training Data
@@ -132,17 +133,50 @@ ggplot(data = pakistan_district_shape, aes(geometry = geometry)) +
   theme_minimal()
 ```
 
-**Map 3** captures the spread of private and public schools at the village level in the northern district of Attock. We focus on only one village for two reasons. First, the village is the appropriate administrative unit for sampling for data collection or intervention randomization. Second, the village serves as a competitive market for the booming public and private schools. Interestingly, we can see only one public primary school in the middle of 7 private schools. This is because the public system provides only one primary school per village, while the existence of private schools indicates parental demand for both access to education and better quality of education.
+**Maps 3-5** capture the spread of the sampled schools in the three sample districts of Attock, Faisalabad, and Rahim Yar Khan in the Punjab province.
 
 ```{r}
 attock <- pakistan_district_shape[pakistan_district_shape$districts == "Attock", ]
 
-ggplot() +
-  geom_sf(data = attock, fill = "lightgray", color = "black") +
-  geom_point(data = sample_schools, aes(x = longitude, y = latitude), color = "red") +
-  labs(title = "Map of Punjab Province (Sample Province) with Sample Districts Highlighted") +
-  theme_minimal()
+school_gps$Longitude <- as.numeric(school_gps$Longitude)
+school_gps$Latitude <- as.numeric(school_gps$Latitude)
 
+attock_schools <- school_gps[school_gps$`Original LEAPS District` == "ATK",]
+
+ggplot() +
+  geom_sf(data = attock, fill = "lightgrey", color = "black") +
+  geom_point(data = attock_schools, aes(x = Longitude, y = Latitude), color = "red") +
+  labs(title = "Map 3. Sample Schools across Attock District", x = "", y = "") +
+  theme_minimal() +
+  coord_sf(lims_method = "geometry_bbox")
+
+```
+
+```{r}
+faisalabad <- pakistan_district_shape[pakistan_district_shape$districts == "Faisalabad", ]
+
+fsd_schools <- school_gps[school_gps$`Original LEAPS District` == "FSD",]
+
+ggplot() +
+  geom_sf(data = faisalabad, fill = "lightgrey", color = "black") +
+  geom_point(data = fsd_schools, aes(x = Longitude, y = Latitude), color = "red") +
+  labs(title = "Map 4. Sample Schools across Faisalabad District",  x = "", y = "") +
+  theme_minimal() +
+  coord_sf(lims_method = "geometry_bbox")
+
+```
+
+```{r}
+rahimyarkhan <- pakistan_district_shape[pakistan_district_shape$districts == "Rahim Yar Khan", ]
+
+ryk_schools <- school_gps[school_gps$`Original LEAPS District` == "RYK",]
+
+ggplot() +
+  geom_sf(data = rahimyarkhan, fill = "lightgrey", color = "black") +
+  geom_point(data = ryk_schools, aes(x = Longitude, y = Latitude), color = "red") +
+  labs(title = "Map 5. Sample Schools across Rahim Yar Khan District",  x = "", y = "") +
+  theme_minimal() +
+  coord_sf(lims_method = "geometry_bbox")
 ```
 
 ## Data Visualization
@@ -1288,6 +1322,8 @@ To determine the optimal model, we compared RMSE values across different models.
 The decision tree model offers both global and local interpretability, making it conducive to deriving actionable insights for educational policymakers and stakeholders. Globally, decision trees provide a lucid visualization of the decision-making process, spotlighting the most influential predictors and their relative significance. Locally, decision trees facilitate the interpretation of individual prediction pathways, empowering stakeholders to discern the specific factors contributing to students' Urdu test scores.
 
 # Discussion of Results
+
+
 
 # References
 

@@ -88,7 +88,11 @@ pakistan_district_shape <- st_read("/Users/hannahreynolds/Desktop/GitHub/finalpr
 
 sample_schools <-read_excel("/Users/hannahreynolds/Downloads/gps_coordinates.xlsx")
 
-school_gps <-read_excel("/Users/ritwika.rituparna/Documents/Georgetown/Spring 2024/Intro to Data Science/finalproject/Data/GPS_List.xlsx")
+school_gps <-read_excel("/Users/hannahreynolds/Desktop/GitHub/finalproject/GPS_Final_List1_20190111.xlsx")
+
+colnames(school_gps)[which(colnames(school_gps) == "GPS North")] <- "Longitude"
+colnames(school_gps)[which(colnames(school_gps) == "GPS East")] <- "Latitude"
+
 ```
 
 ## Create Testing & Training Data
@@ -847,7 +851,7 @@ math_decision_tree_fit_rs <-
 math_knn_fit_rs <- 
   math_knn_workflow %>%
   tune_grid(resamples = score_folds,
-            grid = knn_grid,
+            grid = math_knn_grid,
             control = control_resamples(save_pred = TRUE),
             metrics = metric_set(rmse, mae, rsq))
 ```
@@ -1024,7 +1028,7 @@ eng_decision_tree_fit_rs <-
 eng_knn_fit_rs <- 
   eng_knn_workflow %>%
   tune_grid(resamples = score_folds,
-            grid = knn_grid,
+            grid = eng_knn_grid,
             control = control_resamples(save_pred = TRUE),
             metrics = metric_set(rmse, mae, rsq))
 ```
@@ -1202,7 +1206,7 @@ urdu_decision_tree_fit_rs <-
 urdu_knn_fit_rs <- 
   urdu_knn_workflow %>%
   tune_grid(resamples = score_folds,
-            grid = knn_grid,
+            grid = urdu_knn_grid,
             control = control_resamples(save_pred = TRUE),
             metrics = metric_set(rmse, mae, rsq))
 ```

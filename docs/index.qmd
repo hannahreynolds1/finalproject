@@ -1,0 +1,1375 @@
+---
+title: "Data Science for Public Policy"
+subtitle: "Final Project"
+author: "Ritwika Rituparna - rr1264, Hannah Reynolds - hjr45, Maleeha Hameed - mh2203"
+execute:
+  warning: false
+format:
+  html:
+    embed-resources: true
+---
+
+# Background and Literature Review
+
+A severe student learning crisis plagues most low-income countries (LICs) despite rising school enrollments globally. Average learning is low with high learning inequality. In 2017, 617 million children across the globe did not achieve Minimum Proficiency Levels in reading and math; in Central and South Asia, this proportion stood at an alarming 81% of all children (UNESCO 2017). Outcomes in reading are not better, as only 53% of children in LICs learn to read a paragraph by age 10 (World Bank, 2019). More relevant to this project’s context, only 27% of Grade 3 children in rural Pakistan can read a sentence in a local language, and less than 22% can perform simple arithmetic operations (ASER 2020).
+
+More relevant to this project’s context, Pakistan’s primary education systems are plagued with an even severe learning crisis. Low learning levels and high within-the-classroom learning inequality characterize primary classrooms (Hameed and Razzaque, 2022). Forty-four percent of school-going grade 5 students cannot read a simple sentence and only 51 percent can perform simple arithmetic operations (ASER, 2021). Moreover, learning progress has been critically slow in that only 15% more primary-age girls mastered reading a sentence between 2009 and 2019 (ASER, 2019). Findings from the study on the aftermath of the Pakistan earthquake of 2005 explain the long-term impact of learning gaps. Four years later, earthquake-hit children had lost 1.5 to 2 years of learning, given only 14 weeks of school closures. These learning gaps translated into 15% lower annual earnings, impacting children’s life outcomes (Andrabi et al., 2021).
+
+Low learning levels and within-the-classroom inequality can be attributed to wide-ranging factors. The LEAPS system-level approach prescribes a thorough diagnosis of the learning crisis before offering a solution. This warrants: 1) an identification of the relevant stakeholders in the ecosystem, 2) mapping their linkages and interactions in the student learning process, and 3) an examination of the frictions faced by each in (contributing to) improving the educational quality. The systems-level approach examines the various factors contributing to low learning outcomes rather than imposing a solution through an “input-augmentation” approach (LEAPS, 2007). Many interventions have focused on school-level frictions or constraints such as an overambitious curriculum, lack of financial resources, limited education support services, low teacher quality, misaligned governance mechanisms, etc.
+
+However, we are interested in students’ observable attributes as a determinant of student learning outcomes. Evidence from COVID-19 learning disruption suggests that students from wealthier households were more likely and able to have better learning outcomes, while children from poorer households were at a distinct disadvantage. Not only did they have less guidance and access to educated people in the home to help them learn, but the digital divide also meant they were 55 percent less likely to use technology for learning (Akmal et al., 2020). This variation in parental capability to facilitate learning exacerbates ‘within the classroom’ learning inequality.
+
+We extend this finding to hypothesize that individual student attributes may be correlated with household characteristics, thus impacting student learning outcomes in basic literacy and numeracy. For the purpose of our modelling, individual student attributes include beliefs, growth metrics, intrinsic academic motivation, and career aspirations. Additionally, we explore individual student schooling history to determine if that impacts student learning outcomes.
+
+```{r}
+knitr::include_graphics("/Users/hannahreynolds/Downloads/diagram.png")
+```
+
+Our main research questions are:
+
+1.  How do individual student attributes predict student learning outcomes in basic literacy and numeracy?
+
+2.  Are there specific attributes that have higher power than others in predicting student learning outcomes?
+
+Findings from this analysis will help identify students with below-average learning outcomes and formulate policy recommendations on interventions to improve educational quality. These interventions may include school-level programs such as foundational learning or targeted instruction programs to tailor support to students behind their grade levels, school grants and loans, and provision of education support services. Additionally, given student attributes are correlated with household characteristics and may be predictive of learning outcomes, another consideration for high-impact interventions would be cash transfers to improve household-level economic status. This social protection intervention would lead to better learning outcomes and a sustainable change in the students learning trajectory.
+
+# Data Sources
+
+We have used two datasets from the Learning and Educational Achievements in Pakistan Schools (LEAPS) public database. LEAPS is Pakistan's largest body of education research and one of the largest in any low-income country, with over 20 years of high-impact education research. The LEAPS longitudinal follow-up dataset focuses on 112 villages, 826 schools and 1,807 households from 2004 to 2011 across three districts of the Punjab province – Attock (North), Faisalabad (center), and Rahim Yar Khan (South). The study team selected these districts based on an accepted geographical stratification of the province into North, Center, and South (LEAPS, 2007).
+
+In 2003, this study began as a testing exercise in a randomly selected sample of 112 villages from a list of villages in the Punjab province. Each village had at least one existing private school according to the 2000 census of private schools. The remaining four rounds of surveys were conducted between 2004 and 2011 (LEAPS, 2007).
+
+Our project focuses on the school surveys from the last round of data collection in 2011 at the school level. The school surveys entail five components: 1) a school-level roster, 2) a headteacher roster, 3) a teacher roster, 4) a detailed child roster, and 5) a child-level dataset with anonymized identifiers for linkage with other datasets.
+
+The following factors motivated our choice of the specific datasets from the school surveys:
+
+1.  The latest dataset from 2011 reinforces the local interpretability of our model.
+2.  The child roster contains detailed questions on household characteristics, student beliefs, student growth metrics, intrinsic motivation, school environment, and academic background.
+
+Besides the round-specific dataset from 2011, we use the master student IRT (item response theory) test score dataset given our model predicts test scores based on student characteristics. We accessed the specific datasets of interest from the public database on the [LEAPS website](https://www.leaps.hks.harvard.edu/data/leaps-longitudinal). After downloading the dataset, we saved the dataset on our local computer and added file paths to read and merge the datasets in R, as required.
+
+Additionally, we used geospatial data containing Pakistan’s geographical boundaries at three levels – national, provincial, and district. We sourced this data from from a private website called [CARTO](https://carto.com/dataset/pakistan_districts). Moreover, we used private data containing GPS coordinates of a subset of public and private primary schools from the sample districts. (Please note that the GPS coordinates data must not be shared beyond the purposes of reviewing.)
+
+# Data Wrangling
+
+## Load Libraries
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library (themis)
+library (rpart)
+library(yardstick)
+library(vip)
+library(ggplot2)
+library(rsample)
+library (recipes)
+library (parsnip)
+library(kknn)
+library(dplyr)
+library(haven)
+library(sf)
+library(readxl)
+```
+
+## Data Cleaning
+
+```{r}
+
+hh_characteristics <- read_dta("/Users/hannahreynolds/Downloads/public_child5_cleaned.dta")
+
+irt_scores <- read_dta("/Users/hannahreynolds/Desktop/GitHub/finalproject/school/master/public_child_irt_scores_panel.dta") %>%
+  filter(year == 5) %>%
+  select(-eng_theta_pv1, -eng_theta_pv2, -eng_theta_pv3, -eng_theta_pv4, -eng_theta_pv5, -eng_theta_mle, -eng_theta_mle_se, -math_theta_pv1, -math_theta_pv2, -math_theta_pv3, -math_theta_pv4, -math_theta_pv5, -math_theta_mle, -math_theta_mle_se, -urdu_theta_pv1, -urdu_theta_pv2, -urdu_theta_pv3, -urdu_theta_pv4, -urdu_theta_pv5, -urdu_theta_mle, -urdu_theta_mle_se)
+
+scores <- merge(irt_scores, hh_characteristics,  by = "childcode") 
+
+pakistan_district_shape <- st_read("/Users/hannahreynolds/Desktop/GitHub/finalproject/pakistan_districts/pakistan_districts.shp")
+
+sample_schools <-read_excel("/Users/hannahreynolds/Downloads/gps_coordinates.xlsx")
+
+school_gps <-read_excel("/Users/hannahreynolds/Desktop/GitHub/finalproject/GPS_Final_List1_20190111.xlsx")
+
+colnames(school_gps)[which(colnames(school_gps) == "GPS North")] <- "Longitude"
+colnames(school_gps)[which(colnames(school_gps) == "GPS East")] <- "Latitude"
+
+```
+
+## Create Testing & Training Data
+
+```{r}
+# Set seed before sampling
+set.seed(20211101)
+
+# Create a sample for predictive modelling
+scores_split <- initial_split(data = scores)
+
+scores_train <- training(x = scores_split)
+scores_test <- testing(x = scores_split)
+
+```
+
+# Exploratory Data Analysis
+
+## Geospatial Analysis of Pakistani Schools
+
+**Map 1** visualizes Pakistan with its provincial and district-level geographical boundaries. The red boundary indicates the Punjab province where the three sample districts and sample schools are located. Pakistan's rovince is comparable to a state in the US context.
+
+```{r}
+punjab <- pakistan_district_shape[pakistan_district_shape$province_t == "Punjab", ]
+
+ggplot() +
+  geom_sf(data = pakistan_district_shape, fill = "lightgray") + 
+  geom_sf(data = punjab, fill = "#E34234") + 
+  labs(title = "Map 1. Pakistan with Highlighted Punjab Province (Sampled Province)") +
+  theme_minimal()
+```
+
+**Map 2** zooms into the Punjab province and identifies the three sample districts. The northern district of Attock is highlighted in red. Faisalabad, highlighted in green, is the central district. Our third sample district in the southern part of Punjab is highlighted in blue.
+
+```{r}
+desired_districts <- pakistan_district_shape[pakistan_district_shape$districts %in% c("Attock", "Rahim Yar Khan", "Faisalabad"), ]
+
+ggplot(data = pakistan_district_shape, aes(geometry = geometry)) +
+  geom_sf(data = punjab, fill = "lightgray", color = "black") +
+  geom_sf(data = desired_districts, aes(fill = districts)) +
+  labs(title = "Map 2. Punjab Province (Sample Province) with Sample Districts Highlighted") +
+  theme_minimal()
+```
+
+**Maps 3-5** capture the spread of the sampled public and private primary schools across the three sample districts of Attock, Faisalabad, and Rahim Yar Khan in the Punjab province.
+
+```{r}
+attock <- pakistan_district_shape[pakistan_district_shape$districts == "Attock", ]
+
+school_gps$Longitude <- as.numeric(school_gps$Longitude)
+school_gps$Latitude <- as.numeric(school_gps$Latitude)
+
+attock_schools <- school_gps[school_gps$`Original LEAPS District` == "ATK",]
+
+ggplot() +
+  geom_sf(data = attock, fill = "lightgrey", color = "black") +
+  geom_point(data = attock_schools, aes(x = Longitude, y = Latitude), color = "coral2") +
+  labs(title = "Map 3. Sample Schools across Attock District", x = "", y = "") +
+  theme_minimal() +
+  coord_sf(lims_method = "geometry_bbox")
+```
+
+```{r}
+faisalabad <- pakistan_district_shape[pakistan_district_shape$districts == "Faisalabad", ]
+
+fsd_schools <- school_gps[school_gps$`Original LEAPS District` == "FSD",]
+
+ggplot() +
+  geom_sf(data = faisalabad, fill = "lightgrey", color = "black") +
+  geom_point(data = fsd_schools, aes(x = Longitude, y = Latitude), color = "green3") +
+  labs(title = "Map 4. Sample Schools across Faisalabad District",  x = "", y = "") +
+  theme_minimal() +
+  coord_sf(lims_method = "geometry_bbox")
+```
+
+```{r}
+rahimyarkhan <- pakistan_district_shape[pakistan_district_shape$districts == "Rahim Yar Khan", ]
+
+ryk_schools <- school_gps[school_gps$`Original LEAPS District` == "RYK",]
+
+ggplot() +
+  geom_sf(data = rahimyarkhan, fill = "lightgrey", color = "black") +
+  geom_point(data = ryk_schools, aes(x = Longitude, y = Latitude), color = "dodgerblue") +
+  labs(title = "Map 5. Sample Schools across Rahim Yar Khan District",  x = "", y = "") +
+  theme_minimal() +
+  coord_sf(lims_method = "geometry_bbox")
+```
+
+## Data Visualization
+
+```{r}
+average_scores <- scores_train %>%
+  group_by(district_name) %>%
+  summarize(avg_english = mean(eng_theta_eap, na.rm = TRUE),
+            avg_math = mean(math_theta_eap, na.rm = TRUE),
+            avg_urdu = mean(urdu_theta_eap, na.rm = TRUE))
+
+average_scores <- tidyr::pivot_longer(average_scores, 
+                                      cols = c(avg_english, avg_math, avg_urdu),
+                                      names_to = "test_subject",
+                                      values_to = "average_score")
+
+ggplot(average_scores, aes(x = district_name, y = average_score, fill = test_subject)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Average Test Scores by School District",
+       x = "School District",
+       y = "Average Score",
+       fill = "Test Subject") +
+  theme_minimal()
+```
+
+```{r}
+scores_train %>%
+ggplot(aes(x = factor(mother_educ), fill = factor(aspiration_education))) +
+  geom_bar(position = "dodge") +
+  labs(title = "Relationship Between Mother Education and Student Education Aspiration",
+       x = "Mother Education",
+       y = "Count",
+       fill = "Student Education Aspiration (Grade Level)") +
+  theme_minimal()+
+  scale_x_discrete(labels = c("Illiterate", "Primary or Less", "Primary to Higher Secondary", "Higher Secondary or Higher"))
+```
+
+```{r}
+average_scores <- scores_train %>%
+  filter(aspiration_career < 9) %>%
+  group_by(aspiration_career) %>%
+  summarize(avg_english = mean(eng_theta_eap, na.rm = TRUE),
+            avg_math = mean(math_theta_eap, na.rm = TRUE),
+            avg_urdu = mean(urdu_theta_eap, na.rm = TRUE))
+
+average_scores <- tidyr::pivot_longer(average_scores, 
+                                      cols = c(avg_english, avg_math, avg_urdu),
+                                      names_to = "test_subject",
+                                      values_to = "average_score")
+average_scores %>%
+ggplot(aes(x = factor(aspiration_career, labels = c("Teacher", "Doctor", "Army Forces", "Government Employ", "Private Employ", "Engineer", "Politician", "Farmer")), y = average_score, fill = test_subject)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Average Test Scores by Student Career Aspiration",
+       x = "Students' Career Aspiration",
+       y = "Average Score",
+       fill = "Test Subject") +
+  theme_minimal()
+```
+
+## Student Math Score Exploratory Analysis
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(mother_educ), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Maternal Education Levels on Math Test Scores",
+       x = "Maternal Education Levels",
+       y = "Math Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Illiterate", "Primary or Less", "Primary to Higher Secondary", "Higher Secondary or Higher"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(father_educ), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Paternal Education Levels on Math Test Scores",
+       x = "Paternal Education Levels",
+       y = "Math Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Illiterate", "Primary or Less", "Primary to Higher Secondary", "Higher Secondary or Higher"))
+```
+
+```{r}
+average_math_score_age <- scores_train %>%
+  filter(age > 4) %>%
+  group_by(age) %>%
+  summarize(avg_math_theta_eap = mean(math_theta_eap))
+
+average_math_score_age %>%
+  ggplot(aes(x = age, y = avg_math_theta_eap)) +
+  geom_line() +
+  labs(title = "Effect of Student Age on Average Math Test Scores",
+       x = "Student Age",
+       y = "Average Math Test Scores") +
+  theme_minimal()
+```
+
+```{r}
+average_math_score_enjoy <- scores_train %>%
+  group_by(enjoy_school) %>%
+  summarize(avg_math_theta_eap = mean(math_theta_eap))
+
+average_math_score_enjoy %>%
+  ggplot(aes(x = enjoy_school, y = avg_math_theta_eap)) +
+  geom_bar(stat="identity") + 
+  labs(title = "Effect of Student Enjoying School on Math Test Scores",
+       x = "Does the Student Enjoy School",
+       y = "Average Math Test Scores")+
+  theme_minimal()
+```
+
+```{r}
+scores_train %>%
+  filter(!is.na(teacher_treat)) %>%
+  ggplot(aes(factor(teacher_treat), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Teacher Treatment on Math Test Scores",
+       x = "My Teachers Treat Me Worse than Other Children",
+       y = "Math Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Completely Agree", "Agree", "Somewhat Agree", "Disagree", "Completely Disagree"))
+```
+
+```{r}
+scores_train %>%
+  filter(!is.na(peers_treat)) %>%
+  ggplot(aes(factor(peers_treat), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Peer Treatment on Math Test Scores",
+       x = "My Peers Tease Me at School",
+       y = "Math Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Completely Agree", "Agree", "Somewhat Agree", "Disagree", "Completely Disagree"))+
+  theme_minimal()
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(aspiration_education), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Student Education Aspiration on Math Test Scores",
+       x = "What is the Highest Level of Education You Would Like to Complete",
+       y = "Math Test Scores")+
+  theme_minimal() +
+  scale_x_discrete(labels = c("Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12", "Grade 13", "Grade 14", "Grade 15", "Grade 16"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(transport_school), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Type of Transportation on Math Test Scores",
+       x = "Type of Transportation to School",
+       y = "Math Test Scores") +
+  theme_minimal() +
+  scale_x_discrete(labels = c("Walking", "Cycle", "Bus", "Motor Cycle", "Bullock Cart"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_tv), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a TV on Math Test Scores",
+       x = "Does the Household Own a TV",
+       y = "Math Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_agri_tool), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having Agricultural Tools on Math Test Scores",
+       x = "Does the Household Own Agricultural Tools",
+       y = "Math Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_motorbike), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a Motorbike on Math Test Scores",
+       x = "Does the Household Own a Motorbike",
+       y = "Math Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_tubewell), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a Tubewell on Math Test Scores",
+       x = "Does the Household Own a Tubewell",
+       y = "Math Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_phone), math_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a Phone on Math Test Scores",
+       x = "Does the Household Own a Phone",
+       y = "Math Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+average_math_score_weight <- scores_train %>%
+  group_by(child_weight) %>%
+  summarize(avg_math_theta_eap = mean(math_theta_eap))
+
+average_math_score_weight %>%
+  ggplot(aes(x = child_weight, y = avg_math_theta_eap)) +
+  geom_point() +
+  labs(title = "Effect of Student Weight on Math Test Scores",
+       x = "Child Weight (kg)",
+       y = "Average Math Test Scores")+
+  theme_minimal()
+```
+
+```{r}
+average_math_score_height <- scores_train %>%
+  group_by(child_height) %>%
+  summarize(avg_math_theta_eap = mean(math_theta_eap))
+
+average_math_score_height %>%
+  ggplot(aes(x = child_height, y = avg_math_theta_eap)) +
+  geom_point() +
+  labs(title = "Effect of Student Height on Math Test Scores",
+       x = "Student Height (cm)",
+       y = "Average Math Test Scores")+
+  theme_minimal()
+```
+
+## Student English Score Exploratory Analysis
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(mother_educ), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Maternal Education Levels on English Test Scores",
+       x = "Maternal Education Levels",
+       y = "English Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Illiterate", "Primary or Less", "Primary to Higher Secondary", "Higher Secondary or Higher"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(father_educ), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Paternal Education Levels on English Test Scores",
+       x = "Paternal Education Levels",
+       y = "English Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Illiterate", "Primary or Less", "Primary to Higher Secondary", "Higher Secondary or Higher"))
+```
+
+```{r}
+average_eng_score_age <- scores_train %>%
+  filter(age > 4) %>%
+  group_by(age) %>%
+  summarize(avg_eng_theta_eap = mean(eng_theta_eap))
+
+average_eng_score_age %>%
+  ggplot(aes(x = age, y = avg_eng_theta_eap)) +
+  geom_line() +
+  labs(title = "Effect of Student Age on Average English Test Scores",
+       x = "Student Age",
+       y = "Average English Test Scores") +
+  theme_minimal()
+```
+
+```{r}
+average_eng_score_enjoy <- scores_train %>%
+  group_by(enjoy_school) %>%
+  summarize(avg_eng_theta_eap = mean(eng_theta_eap))
+
+average_eng_score_enjoy %>%
+  ggplot(aes(x = enjoy_school, y = avg_eng_theta_eap)) +
+  geom_bar(stat="identity") + 
+  labs(title = "Effect of Student Enjoying School on English Test Scores",
+       x = "Does the Student Enjoy School",
+       y = "Average English Test Scores")+
+  theme_minimal()
+```
+
+```{r}
+scores_train %>%
+  filter(!is.na(teacher_treat)) %>%
+  ggplot(aes(factor(teacher_treat), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Teacher Treatment on English Test Scores",
+       x = "My Teachers Treat Me Worse than Other Children",
+       y = "English Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Completely Agree", "Agree", "Somewhat Agree", "Disagree", "Completely Disagree"))
+```
+
+```{r}
+scores_train %>%
+  filter(!is.na(peers_treat)) %>%
+  ggplot(aes(factor(peers_treat), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Peer Treatment on English Test Scores",
+       x = "My Peers Tease Me at School",
+       y = "English Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Completely Agree", "Agree", "Somewhat Agree", "Disagree", "Completely Disagree"))+
+  theme_minimal()
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(aspiration_education), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Student Education Aspiration on English Test Scores",
+       x = "What is the Highest Level of Education You Would Like to Complete",
+       y = "English Test Scores")+
+  theme_minimal() +
+  scale_x_discrete(labels = c("Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12", "Grade 13", "Grade 14", "Grade 15", "Grade 16"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(transport_school), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Type of Transportation on English Test Scores",
+       x = "Type of Transportation to School",
+       y = "English Test Scores") +
+  theme_minimal() +
+  scale_x_discrete(labels = c("Walking", "Cycle", "Bus", "Motor Cycle", "Bullock Cart"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_tv), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a TV on English Test Scores",
+       x = "Does the Household Own a TV",
+       y = "English Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_agri_tool), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having Agricultural Tools on English Test Scores",
+       x = "Does the Household Own Agricultural Tools",
+       y = "English Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_motorbike), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a Motorbike on English Test Scores",
+       x = "Does the Household Own a Motorbike",
+       y = "English Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_tubewell), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a Tubewell on English Test Scores",
+       x = "Does the Household Own a Tubewell",
+       y = "English Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_phone), eng_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a Phone on English Test Scores",
+       x = "Does the Household Own a Phone",
+       y = "English Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+average_eng_score_weight <- scores_train %>%
+  group_by(child_weight) %>%
+  summarize(avg_eng_theta_eap = mean(eng_theta_eap))
+
+average_eng_score_weight %>%
+  ggplot(aes(x = child_weight, y = avg_eng_theta_eap)) +
+  geom_point() +
+  labs(title = "Effect of Student Weight on English Test Scores",
+       x = "Child Weight (kg)",
+       y = "Average English Test Scores")+
+  theme_minimal()
+```
+
+```{r}
+average_eng_score_height <- scores_train %>%
+  group_by(child_height) %>%
+  summarize(avg_eng_theta_eap = mean(eng_theta_eap))
+
+average_eng_score_height %>%
+  ggplot(aes(x = child_height, y = avg_eng_theta_eap)) +
+  geom_point() +
+  labs(title = "Effect of Student Height on English Test Scores",
+       x = "Child Height (cm)",
+       y = "Average English Test Scores")+
+  theme_minimal()
+```
+
+## Student Urdu Score Exploratory Analysis
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(mother_educ), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Maternal Education Levels on Urdu Test Scores",
+       x = "Maternal Education Levels",
+       y = "Urdu Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Illiterate", "Primary or Less", "Primary to Higher Secondary", "Higher Secondary or Higher"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(father_educ), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Paternal Education Levels on Urdu Test Scores",
+       x = "Paternal Education Levels",
+       y = "Urdu Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Illiterate", "Primary or Less", "Primary to Higher Secondary", "Higher Secondary or Higher"))
+```
+
+```{r}
+average_urdu_score_age <- scores_train %>%
+  filter(age > 4) %>%
+  group_by(age) %>%
+  summarize(avg_urdu_theta_eap = mean(urdu_theta_eap))
+
+average_urdu_score_age %>%
+  ggplot(aes(x = age, y = avg_urdu_theta_eap)) +
+  geom_line() +
+  labs(title = "Effect of Student Age on Average Urdu Test Scores",
+        x = "Student Age",
+       y = "Average Urdu Test Scores") +
+  theme_minimal()
+```
+
+```{r}
+average_urdu_score_enjoy <- scores_train %>%
+  group_by(enjoy_school) %>%
+  summarize(avg_urdu_theta_eap = mean(urdu_theta_eap))
+
+average_urdu_score_enjoy %>%
+  ggplot(aes(x = enjoy_school, y = avg_urdu_theta_eap)) +
+  geom_bar(stat="identity") + 
+  labs(title = "Effect of Student Enjoying School on Urdu Test Scores",
+       x = "Does the Student Enjoy School",
+       y = "Average Urdu Test Scores")+
+  theme_minimal()
+```
+
+```{r}
+scores_train %>%
+  filter(!is.na(teacher_treat)) %>%
+  ggplot(aes(factor(teacher_treat), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Teacher Treatment on Urdu Test Scores",
+       x = "My Teachers Treat Me Worse than Other Children",
+       y = "Urdu Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Completely Agree", "Agree", "Somewhat Agree", "Disagree", "Completely Disagree"))
+```
+
+```{r}
+scores_train %>%
+  filter(!is.na(peers_treat)) %>%
+  ggplot(aes(factor(peers_treat), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Peer Treatment on Urdu Test Scores",
+       x = "My Peers Tease Me at School",
+       y = "Urdu Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("Completely Agree", "Agree", "Somewhat Agree", "Disagree", "Completely Disagree"))+
+  theme_minimal()
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(aspiration_education), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Student Education Aspiration on Urdu Test Scores",
+       x = "What is the Highest Level of Education You Would Like to Complete",
+       y = "Urdu Test Scores")+
+  theme_minimal() +
+  scale_x_discrete(labels = c("Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12", "Grade 13", "Grade 14", "Grade 15", "Grade 16"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(transport_school), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Type of Transportation on Urdu Test Scores",
+       x = "Type of Transportation to School",
+       y = "Urdu Test Scores") +
+  theme_minimal() +
+  scale_x_discrete(labels = c("Walking", "Cycle", "Bus", "Motor Cycle", "Bullock Cart"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_tv), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a TV on Urdu Test Scores",
+       x = "Does the Household Own a TV",
+       y = "Urdu Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_agri_tool), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having Agricultural Tools on Urdu Test Scores",
+       x = "Does the Household Own Agricultural Tools",
+       y = "Urdu Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_motorbike), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a Motorbike on Urdu Test Scores",
+       x = "Does the Household Own a Motorbike",
+       y = "Urdu Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_tubewell), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a Tubewell on Urdu Test Scores",
+       x = "Does the Household Own a Tubewell",
+       y = "Urdu Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+scores_train %>%
+  ggplot(aes(factor(asset_phone), urdu_theta_eap)) +
+  geom_boxplot() +
+  labs(title = "Effect of Houshold Having a Phone on Urdu Test Scores",
+       x = "Does the Household Own a Phone",
+       y = "Urdu Test Scores")+
+  theme_minimal()+
+  scale_x_discrete(labels = c("No", "Yes"))
+```
+
+```{r}
+average_urdu_score_weight <- scores_train %>%
+  group_by(child_weight) %>%
+  summarize(avg_urdu_theta_eap = mean(urdu_theta_eap))
+
+average_urdu_score_weight %>%
+  ggplot(aes(x = child_weight, y = avg_urdu_theta_eap)) +
+  geom_point() +
+  labs(title = "Effect of Student Weight on Urdu Test Scores",
+       x = "Child Weight (kg)",
+       y = "Average Urdu Test Scores")+
+  theme_minimal()
+```
+
+```{r}
+average_urdu_score_height <- scores_train %>%
+  group_by(child_height) %>%
+  summarize(avg_urdu_theta_eap = mean(urdu_theta_eap))
+
+average_urdu_score_height %>%
+  ggplot(aes(x = child_height, y = avg_urdu_theta_eap)) +
+  geom_point() +
+  labs(title = "Effect of Student Height on Urdu Test Scores",
+       x = "Student Height (cm)",
+       y = "Average Urdu Test Scores")+
+  theme_minimal()
+```
+
+# Data Analysis
+
+## Student Math Score Prediction Analysis
+
+### Create Models
+
+```{r}
+score_folds <- vfold_cv(scores_train, v = 10)
+
+# Create Recipe
+math_scores_rec <- recipe(math_theta_eap ~ mother_educ + father_educ + age + enjoy_school + aspiration_education + transport_school + asset_tv + asset_agri_tool + asset_motorbike + asset_tubewell + asset_phone + dist_code + mauza_code, data = scores_train) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_corr(all_numeric_predictors())
+
+# 3 Model Specifications
+math_linear_model <- linear_reg() %>%
+  set_engine("lm")%>%
+  set_mode(mode = "regression")
+
+math_decision_tree_model <- decision_tree() %>%
+  set_engine("rpart") %>%
+  set_mode(mode = "regression")
+
+math_knn_model <- nearest_neighbor(neighbors = tune()) %>%
+  set_engine("kknn") %>%
+  set_mode(mode = "regression")
+
+math_knn_grid <- grid_regular(neighbors(range = c(1, 15)), levels = 10)
+```
+
+### Create Workflows
+
+```{r}
+math_linear_workflow <- workflow() %>%
+  add_recipe(math_scores_rec) %>%
+  add_model(math_linear_model)
+
+math_decision_tree_workflow <- workflow() %>%
+  add_recipe(math_scores_rec) %>%
+  add_model(math_decision_tree_model)
+
+math_knn_workflow <- workflow() %>%
+  add_recipe(math_scores_rec) %>%
+  add_model(math_knn_model)
+```
+
+### Fit Re-samples
+
+```{r}
+math_linear_fit_rs <- math_linear_workflow %>%
+  fit_resamples(resamples = score_folds,
+                control = control_resamples(save_pred = TRUE, save_workflow = TRUE),
+                metrics = metric_set(rmse, mae, rsq))
+
+math_decision_tree_fit_rs <- 
+  math_decision_tree_workflow %>%
+  fit_resamples(resamples = score_folds,
+                control = control_resamples(save_pred = TRUE),
+                metrics = metric_set(rmse, mae, rsq))
+
+math_knn_fit_rs <- 
+  math_knn_workflow %>%
+  tune_grid(resamples = score_folds,
+            grid = math_knn_grid,
+            control = control_resamples(save_pred = TRUE),
+            metrics = metric_set(rmse, mae, rsq))
+```
+
+### Model Estimations
+
+```{r}
+# Linear MAE & RMSE 
+math_linear_metrics <- collect_metrics(math_linear_fit_rs)
+print(math_linear_metrics)
+
+collect_metrics(math_linear_fit_rs, summarize = FALSE) %>%
+  filter(.metric == "rmse") %>%
+  ggplot (aes(id, .estimate, group = .estimator)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Calculated RMSE for Math Linear Fit Across 10 Folds",
+       y = "RMSE_hat")+
+  theme_minimal()
+
+math_linear_rmse <- math_linear_fit_rs %>%
+  collect_metrics() %>%
+  filter(.metric == "rmse")
+
+
+# Decision Tree MAE & RMSE 
+math_decision_tree_metrics <- collect_metrics(math_decision_tree_fit_rs)
+print(math_decision_tree_metrics)
+
+collect_metrics(math_decision_tree_fit_rs, summarize = FALSE) %>%
+  filter(.metric == "rmse") %>%
+  ggplot (aes(id, .estimate, group = .estimator)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Calculated RMSE for Math Decision Tree Fit Across 10 Folds",
+       y = "RMSE_hat")+
+  theme_minimal()
+
+math_decision_tree_rmse <- math_decision_tree_fit_rs %>%
+  collect_metrics() %>%
+  filter(.metric == "rmse")
+
+# KNN MAE & RMSE 
+math_knn_metrics <- collect_metrics(math_knn_fit_rs)
+print(math_knn_metrics)
+
+collect_metrics(math_knn_fit_rs, summarize = FALSE) %>%
+  filter(.metric == "rmse") %>%
+  ggplot (aes(id, .estimate, group = .estimator)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Calculated RMSE for Math KNN Fit Across 10 Folds",
+       y = "RMSE_hat")+
+  theme_minimal()
+
+math_knn_rmse <- math_knn_fit_rs %>%
+  collect_metrics() %>%
+  filter(.metric == "rmse") %>%
+  summarize(avg_rmse = mean(mean))
+
+math_knn_mean_rmse <- collect_metrics(math_knn_fit_rs) %>%
+  filter(.metric == "rmse") %>%
+  summarize(avg_rms = mean(mean))
+
+```
+
+### Final Prediction
+
+```{r}
+math_dt_best <- math_decision_tree_fit_rs %>%
+  select_best(metric = "rmse")
+
+math_dt_final <- finalize_workflow(math_decision_tree_workflow, parameters = math_dt_best)
+
+math_dt_final_fit <- math_dt_final %>%
+  fit(data = scores_train)
+
+math_dt_predictions <- math_dt_final_fit %>%
+  predict(new_data = scores_test)
+
+math_dt_final_rmse <- bind_cols(
+  scores_test %>% 
+    select(math_theta_eap),
+  math_dt_predictions %>% 
+    select(.pred)) %>%
+  rmse(truth = math_theta_eap, estimate = .pred)
+
+math_dt_final_rmse 
+```
+
+**1. Model Selection:**
+
+The research question aims to predict math test scores for students based on various demographic and educational factors. To address this question, we selected three distinct predictive modeling approaches:
+
+-   Linear Regression: This model assumes a linear relationship between predictors and the target variable, making it suitable for exploring the linear associations between independent variables such as parental education levels, age, and enjoyment of school with the dependent variable, math test scores.
+-   Decision Tree Model: Decision trees are well-suited for capturing complex nonlinear relationships and interactions between predictor variables. Given the diverse set of predictors in our dataset, including both categorical and continuous variables, decision trees offer flexibility in handling such data.
+-   K-Nearest Neighbors (KNN): KNN is a non-parametric method that relies on similarity measures to make predictions. It is particularly useful when the underlying data distribution is unknown or when there are no assumptions about the data's linearity. KNN can capture local patterns in the data and is robust to outliers.
+
+**2. Model Evaluation:**
+
+We employed k-fold cross-validation to evaluate the performance of each model. This technique partitions the dataset into k subsets, trains the model on k-1 subsets, and evaluates it on the remaining subset. This process is repeated k times, ensuring that each data point is used for both training and validation. By averaging the evaluation metrics across all folds, we obtain robust estimates of model performance that are less sensitive to the particularities of any single data split.
+
+For model evaluation, we focused on three key metrics:
+
+Root Mean Squared Error (RMSE): RMSE provides a measure of the average deviation between the predicted and actual math test scores. A lower RMSE indicates better model performance in accurately predicting test scores. Mean Absolute Error (MAE): MAE measures the average absolute difference between predicted and actual values. It offers insights into the magnitude of prediction errors, irrespective of their direction. R-squared (R\^2): R-squared quantifies the proportion of variance in the target variable explained by the predictor variables. Higher R-squared values indicate better model fit to the data.
+
+**3. Model Selection Criteria:**
+
+To select the best-performing model, we compared the RMSE values across different models. The decision tree model emerged as the preferred choice based on its lowest RMSE on the testing data. While the linear regression and KNN models also demonstrated reasonable predictive performance, the decision tree model exhibited superior accuracy in capturing the underlying patterns in the data.
+
+**4. Interpretability and Applicability:**
+
+The decision tree model offers both global and local interpretability, making it suitable for informing actionable insights for educational policymakers and stakeholders. Globally, decision trees provide a clear visualization of the decision-making process, highlighting the most influential predictors and their relative importance. Locally, decision trees allow for the interpretation of individual prediction paths, enabling stakeholders to understand the specific factors contributing to students' math test scores.
+
+## Student English Score Prediction Analysis
+
+### Create Models
+
+```{r}
+
+# Create Recipe
+eng_scores_rec <- recipe(eng_theta_eap ~ mother_educ + father_educ + age + enjoy_school + aspiration_education + transport_school + asset_tv + asset_agri_tool + asset_motorbike + asset_tubewell + asset_phone + dist_code + mauza_code, data = scores_train) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_corr(all_numeric_predictors())
+
+# 3 Model Specifications
+eng_linear_model <- linear_reg() %>%
+  set_engine("lm")%>%
+  set_mode(mode = "regression")
+
+eng_decision_tree_model <- decision_tree() %>%
+  set_engine("rpart") %>%
+  set_mode(mode = "regression")
+
+eng_knn_model <- nearest_neighbor(neighbors = tune()) %>%
+  set_engine("kknn") %>%
+  set_mode(mode = "regression")
+
+eng_knn_grid <- grid_regular(neighbors(range = c(1, 15)), levels = 10)
+```
+
+### Create Workflows
+
+```{r}
+eng_linear_workflow <- workflow() %>%
+  add_recipe(eng_scores_rec) %>%
+  add_model(eng_linear_model)
+
+eng_decision_tree_workflow <- workflow() %>%
+  add_recipe(eng_scores_rec) %>%
+  add_model(eng_decision_tree_model)
+
+eng_knn_workflow <- workflow() %>%
+  add_recipe(eng_scores_rec) %>%
+  add_model(eng_knn_model)
+```
+
+### Fit Re-samples
+
+```{r}
+eng_linear_fit_rs <- 
+  eng_linear_workflow %>%
+  fit_resamples(resamples = score_folds,
+                control = control_resamples(save_pred = TRUE, save_workflow = TRUE),
+                metrics = metric_set(rmse, mae, rsq))
+
+eng_decision_tree_fit_rs <- 
+  eng_decision_tree_workflow %>%
+  fit_resamples(resamples = score_folds,
+                control = control_resamples(save_pred = TRUE),
+                metrics = metric_set(rmse, mae, rsq))
+
+eng_knn_fit_rs <- 
+  eng_knn_workflow %>%
+  tune_grid(resamples = score_folds,
+            grid = eng_knn_grid,
+            control = control_resamples(save_pred = TRUE),
+            metrics = metric_set(rmse, mae, rsq))
+```
+
+### Model Estimations
+
+```{r}
+# Linear MAE & RMSE 
+eng_linear_metrics <- collect_metrics(eng_linear_fit_rs)
+print(eng_linear_metrics)
+
+collect_metrics(eng_linear_fit_rs, summarize = FALSE) %>%
+  filter(.metric == "rmse") %>%
+  ggplot (aes(id, .estimate, group = .estimator)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Calculated RMSE for English Linear Fit Across 10 Folds",
+       y = "RMSE_hat")+
+  theme_minimal()
+
+eng_linear_rmse <- eng_linear_fit_rs %>%
+  collect_metrics() %>%
+  filter(.metric == "rmse")
+
+
+# Decision Tree MAE & RMSE 
+eng_decision_tree_metrics <- collect_metrics(eng_decision_tree_fit_rs)
+print(eng_decision_tree_metrics)
+
+collect_metrics(eng_decision_tree_fit_rs, summarize = FALSE) %>%
+  filter(.metric == "rmse") %>%
+  ggplot (aes(id, .estimate, group = .estimator)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Calculated RMSE for English Decision Tree Fit Across 10 Folds",
+       y = "RMSE_hat")+
+  theme_minimal()
+
+eng_decision_tree_rmse <- eng_decision_tree_fit_rs %>%
+  collect_metrics() %>%
+  filter(.metric == "rmse")
+
+
+# KNN MAE & RMSE 
+eng_knn_metrics <- collect_metrics(eng_knn_fit_rs)
+print(eng_knn_metrics)
+
+collect_metrics(eng_knn_fit_rs, summarize = FALSE) %>%
+  filter(.metric == "rmse") %>%
+  ggplot (aes(id, .estimate, group = .estimator)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Calculated RMSE for English KNN Fit Across 10 Folds",
+       y = "RMSE_hat")+
+  theme_minimal()
+
+eng_knn_rmse <- eng_knn_fit_rs %>%
+  collect_metrics() %>%
+  filter(.metric == "rmse") %>%
+  summarize(avg_rmse = mean(mean))
+
+eng_knn_mean_rmse <- collect_metrics(eng_knn_fit_rs) %>%
+  filter(.metric == "rmse") %>%
+  summarize(avg_rms = mean(mean))
+
+```
+
+### Final Prediction
+
+```{r}
+eng_dt_best <- eng_decision_tree_fit_rs %>%
+  select_best(metric = "rmse")
+
+eng_dt_final <- finalize_workflow(eng_decision_tree_workflow, parameters = eng_dt_best)
+
+eng_dt_final_fit <- eng_dt_final %>%
+  fit(data = scores_train)
+
+eng_dt_predictions <- eng_dt_final_fit %>%
+  predict(new_data = scores_test)
+
+eng_dt_final_rmse <- bind_cols(
+  scores_test %>% 
+    select(eng_theta_eap),
+  eng_dt_predictions %>% 
+    select(.pred)) %>%
+  rmse(truth = eng_theta_eap, estimate = .pred)
+
+eng_dt_final_rmse 
+```
+
+**1. Model Selection:**
+
+The research question focuses on predicting English test scores for students using various demographic and educational factors. To address this inquiry, we explored three distinct predictive modeling approaches:
+
+-   Linear Regression: This model assumes a linear relationship between predictors and the target variable, making it appropriate for examining the linear connections between independent variables such as parental education levels, age, and enjoyment of school with the dependent variable, English test scores.
+-   Decision Tree Model: Decision trees excel in capturing intricate nonlinear relationships and interactions among predictor variables. Given the diverse array of predictors in our dataset, encompassing both categorical and continuous variables, decision trees offer adaptability in handling such heterogeneous data.
+-   K-Nearest Neighbors (KNN): KNN represents a non-parametric method relying on similarity measures to make predictions. It proves valuable when the underlying data distribution is unknown or when assumptions about linearity are absent. KNN excels in capturing localized patterns within the data and is resilient to outliers.
+
+**2. Model Evaluation:**
+
+We employed k-fold cross-validation to assess the performance of each model. This technique partitions the dataset into k subsets, trains the model on k-1 subsets, and evaluates it on the remaining subset. This iterative process ensures that each data point contributes to both training and validation, yielding robust estimates of model performance less susceptible to idiosyncrasies in any single data split.
+
+In evaluating the models, we focused on three pivotal metrics:
+
+Root Mean Squared Error (RMSE): RMSE serves as a gauge for the average deviation between the predicted and actual English test scores. A lower RMSE signifies superior model performance in accurately predicting test scores. Mean Absolute Error (MAE): MAE gauges the average absolute difference between predicted and actual values, providing insights into the magnitude of prediction errors, regardless of their direction. R-squared (R\^2): R-squared quantifies the proportion of variance in the target variable elucidated by the predictor variables. Higher R-squared values denote better model fit to the data.
+
+**3. Model Selection Criteria:**
+
+To determine the optimal model, we compared RMSE values across different models. The decision tree model emerged as the preferred choice due to its lowest RMSE on the testing data. While the linear regression and KNN models also exhibited reasonable predictive performance, the decision tree model demonstrated superior accuracy in capturing the underlying data patterns.
+
+**4. Interpretability and Applicability:**
+
+The decision tree model offers both global and local interpretability, rendering it conducive to deriving actionable insights for educational policymakers and stakeholders. Globally, decision trees furnish a lucid visualization of the decision-making process, spotlighting the most influential predictors and their relative significance. Locally, decision trees facilitate the interpretation of individual prediction pathways, empowering stakeholders to discern the specific factors contributing to students' English test scores.
+
+## Student Urdu Score Prediction Analysis
+
+### Create Models
+
+```{r}
+
+# Create Recipe
+urdu_scores_rec <- recipe(urdu_theta_eap ~ mother_educ + father_educ + age + enjoy_school + aspiration_education + transport_school + asset_tv + asset_agri_tool + asset_motorbike + asset_tubewell + asset_phone + dist_code + mauza_code, data = scores_train) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_corr(all_numeric_predictors())
+
+# 3 Model Specifications
+urdu_linear_model <- linear_reg() %>%
+  set_engine("lm")%>%
+  set_mode(mode = "regression")
+
+urdu_decision_tree_model <- decision_tree() %>%
+  set_engine("rpart") %>%
+  set_mode(mode = "regression")
+
+urdu_knn_model <- nearest_neighbor(neighbors = tune()) %>%
+  set_engine("kknn") %>%
+  set_mode(mode = "regression")
+
+urdu_knn_grid <- grid_regular(neighbors(range = c(1, 15)), levels = 10)
+```
+
+### Create Workflows
+
+```{r}
+urdu_linear_workflow <- workflow() %>%
+  add_recipe(urdu_scores_rec) %>%
+  add_model(urdu_linear_model)
+
+urdu_decision_tree_workflow <- workflow() %>%
+  add_recipe(urdu_scores_rec) %>%
+  add_model(urdu_decision_tree_model)
+
+urdu_knn_workflow <- workflow() %>%
+  add_recipe(urdu_scores_rec) %>%
+  add_model(urdu_knn_model)
+```
+
+### Fit Re-samples
+
+```{r}
+urdu_linear_fit_rs <- 
+  urdu_linear_workflow %>%
+  fit_resamples(resamples = score_folds,
+                control = control_resamples(save_pred = TRUE, save_workflow = TRUE),
+                metrics = metric_set(rmse, mae, rsq))
+
+urdu_decision_tree_fit_rs <- 
+  urdu_decision_tree_workflow %>%
+  fit_resamples(resamples = score_folds,
+                control = control_resamples(save_pred = TRUE),
+                metrics = metric_set(rmse, mae, rsq))
+
+urdu_knn_fit_rs <- 
+  urdu_knn_workflow %>%
+  tune_grid(resamples = score_folds,
+            grid = urdu_knn_grid,
+            control = control_resamples(save_pred = TRUE),
+            metrics = metric_set(rmse, mae, rsq))
+```
+
+### Model Estimations
+
+```{r}
+# Linear MAE & RMSE 
+urdu_linear_metrics <- collect_metrics(urdu_linear_fit_rs)
+print(urdu_linear_metrics)
+
+collect_metrics(urdu_linear_fit_rs, summarize = FALSE) %>%
+  filter(.metric == "rmse") %>%
+  ggplot (aes(id, .estimate, group = .estimator)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Calculated RMSE for Urdu Linear Fit Across 10 Folds",
+       y = "RMSE_hat")+
+  theme_minimal()
+
+urdu_linear_rmse <- urdu_linear_fit_rs %>%
+  collect_metrics() %>%
+  filter(.metric == "rmse")
+
+
+# Decision Tree MAE & RMSE 
+urdu_decision_tree_metrics <- collect_metrics(urdu_decision_tree_fit_rs)
+print(urdu_decision_tree_metrics)
+
+collect_metrics(urdu_decision_tree_fit_rs, summarize = FALSE) %>%
+  filter(.metric == "rmse") %>%
+  ggplot (aes(id, .estimate, group = .estimator)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Calculated RMSE for Urdu Decision Tree Fit Across 10 Folds",
+       y = "RMSE_hat")+
+  theme_minimal()
+
+urdu_decision_tree_rmse <- urdu_decision_tree_fit_rs %>%
+  collect_metrics() %>%
+  filter(.metric == "rmse")
+
+
+# KNN MAE & RMSE 
+urdu_knn_metrics <- collect_metrics(urdu_knn_fit_rs)
+print(urdu_knn_metrics)
+
+collect_metrics(urdu_knn_fit_rs, summarize = FALSE) %>%
+  filter(.metric == "rmse") %>%
+  ggplot (aes(id, .estimate, group = .estimator)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Calculated RMSE for Urdu KNN Fit Across 10 Folds",
+       y = "RMSE_hat")+
+  theme_minimal()
+
+urdu_knn_rmse <- urdu_knn_fit_rs %>%
+  collect_metrics() %>%
+  filter(.metric == "rmse") %>%
+  summarize(avg_rmse = mean(mean))
+
+urdu_knn_mean_rmse <- collect_metrics(urdu_knn_fit_rs) %>%
+  filter(.metric == "rmse") %>%
+  summarize(avg_rms = mean(mean))
+
+```
+
+### Final Prediction
+
+```{r}
+urdu_dt_best <- urdu_decision_tree_fit_rs %>%
+  select_best(metric = "rmse")
+
+urdu_dt_final <- finalize_workflow(urdu_decision_tree_workflow, parameters = urdu_dt_best)
+
+urdu_dt_final_fit <- urdu_dt_final %>%
+  fit(data = scores_train)
+
+urdu_dt_predictions <- urdu_dt_final_fit %>%
+  predict(new_data = scores_test)
+
+urdu_dt_final_rmse <- bind_cols(
+  scores_test %>% 
+    select(urdu_theta_eap),
+  urdu_dt_predictions %>% 
+    select(.pred)) %>%
+  rmse(truth = urdu_theta_eap, estimate = .pred)
+
+urdu_dt_final_rmse 
+```
+
+**1. Model Selection:**
+
+The research focuses on predicting Urdu test scores for students using a blend of demographic and educational factors. To tackle this challenge, we explored three distinctive predictive modeling strategies:
+
+-   Linear Regression: This model assumes a linear association between predictors and the target variable, making it well-suited for investigating the linear links between independent variables like parental education levels, age, and school enjoyment with the dependent variable, Urdu test scores.
+-   Decision Tree Model: Decision trees shine in capturing complex nonlinear relationships and interactions among predictor variables. With our dataset comprising a diverse array of predictors, including both categorical and continuous variables, decision trees offer adaptability in handling such diverse data.
+-   K-Nearest Neighbors (KNN): KNN serves as a non-parametric approach relying on similarity measures to make predictions. It proves valuable when the underlying data distribution is unknown or when assumptions about linearity are uncertain. KNN excels in capturing localized patterns within the data and is resilient to outliers.
+
+**2. Model Evaluation:**
+
+We employed k-fold cross-validation to evaluate the performance of each model. This technique partitions the dataset into k subsets, trains the model on k-1 subsets, and evaluates it on the remaining subset. This iterative process ensures each data point contributes to both training and validation, yielding robust estimates of model performance less susceptible to idiosyncrasies in any single data split.
+
+In evaluating the models, we focused on three pivotal metrics:
+
+Root Mean Squared Error (RMSE): RMSE acts as a measure for the average deviation between the predicted and actual Urdu test scores. A lower RMSE signifies superior model performance in accurately predicting test scores. Mean Absolute Error (MAE): MAE gauges the average absolute difference between predicted and actual values, providing insights into the magnitude of prediction errors, irrespective of their direction. R-squared (R\^2): R-squared quantifies the proportion of variance in the target variable elucidated by the predictor variables. Higher R-squared values denote better model fit to the data.
+
+**3. Model Selection Criteria:**
+
+To determine the optimal model, we compared RMSE values across different models. The decision tree model emerged as the preferred choice due to its lowest RMSE on the testing data. While the linear regression and KNN models also exhibited reasonable predictive performance, the decision tree model demonstrated superior accuracy in capturing the underlying data patterns.
+
+**4. Interpretability and Applicability:**
+
+The decision tree model offers both global and local interpretability, making it conducive to deriving actionable insights for educational policymakers and stakeholders. Globally, decision trees provide a lucid visualization of the decision-making process, spotlighting the most influential predictors and their relative significance. Locally, decision trees facilitate the interpretation of individual prediction pathways, empowering stakeholders to discern the specific factors contributing to students' Urdu test scores.
+
+# Discussion of Results and Conclusion
+
+## Interpretation of Results:
+
+Our analysis aimed to investigate the relationship between individual student attributes (including household characteristics) and student learning outcomes in basic literacy and numeracy. Utilizing predictive modeling techniques, we developed models to predict math, English, and Urdu test scores based on household incomes. We used various candidate models, including linear regression, decision tree, and K-nearest neighbors (KNN). However, our findings consistently indicate that the decision tree model is the best model for each prediction task. It is important to note that all models yielded relatively high Root Mean Squared Error (RMSE) values, indicating suboptimal predictive accuracy.
+
+## Implications for the Research Question:
+
+The results of our analysis shed light on the complex dynamics underlying student learning outcomes in low-income settings, particularly in rural areas of Pakistan. While household incomes serve as crucial predictors of educational attainment, our study suggests that the predictive models developed may not adequately capture the nuanced relationships between student attributes (including household characteristics) and student performance in literacy and numeracy assessments. This highlights the need for further exploration and refinement of modeling techniques to better understand and predict learning outcomes in such contexts.
+
+Moreover, the relatively high RMSE values observed in our models underscore the challenges associated with accurately predicting student test scores based solely on student attributes including household characteristics. This suggests that other factors beyond socioeconomic status may significantly influence educational outcomes, including but not limited to, quality of instruction, access to educational resources, and cultural factors. As mentioned in Section 1. Background, there may be other school-level and political economy factors contributing to poor student learning outcomes. Therefore, future research endeavors should adopt a more comprehensive approach, considering a broader range of predictors and employing advanced modeling techniques to enhance predictive accuracy.
+
+## Limitations of Analysis:
+
+Our analysis is subject to several limitations that warrant consideration. Firstly, the use of individual student attributes as the sole predictor variable may oversimplify the multifaceted nature of socioeconomic status and its impact on student learning outcomes. Additionally, the relatively small sample size and geographical focus on rural areas of Punjab province may limit the generalizability of our findings to other regions or demographic groups within Pakistan.
+
+Furthermore, the high RMSE values obtained in our predictive models suggest potential deficiencies in the underlying data quality or model specification. Despite efforts to incorporate detailed information on household characteristics and student attributes, there may exist unobserved variables or measurement errors that contribute to the observed discrepancies between predicted and actual test scores.
+
+## Areas for Potential Future Research:
+
+Moving forward, future research endeavors can aim to address the identified limitations and build upon the findings of this study. Specifically, there is a need for more comprehensive data collection efforts encompassing a broader range of predictors, including school-level factors, teacher quality, and parental involvement in education. Moreover, incorporating qualitative research methods such as interviews and focus groups could provide deeper insights into the socio-cultural dynamics influencing student learning outcomes.
+
+Additionally, exploring alternative modeling approaches, such as ensemble methods or deep learning techniques, may offer improved predictive accuracy and robustness. Furthermore, a time-series analysis of the longitudinal study tracking students' educational trajectories over time could elucidate the long-term effects of household characteristics on educational attainment and socioeconomic mobility.
+
+In conclusion, while our analysis provides valuable insights into the relationship between individual student attributes and student learning outcomes in rural Pakistan, it also underscores the complexity and multifactorial nature of educational achievement. By addressing the limitations highlighted and embracing interdisciplinary approaches, future research endeavors can contribute to the development of more effective interventions aimed at improving educational quality and promoting equitable access to learning opportunities.
+
+# References
+
+Akmal, M., Ayub, U., Crawfurd, L., Hares, S., and Luiza, A. (2020). Lessons from a New Phone Survey in Pakistan.
+
+Andrabi, Tahir, Jishnu Das, Asim I. Khwaja, Tara Vishwanathan, and Tristan Zajonc. 2007. “Learning and Educational Achievements in Punjab Schools (LEAPS): Insights to Inform the Education Policy Debate.” *Harvard University*.
+
+Andrabi, Das, and Khwaja (2022). *The Learning and Educational Achievement in Pakistan Schools (LEAPS) Longitudinal Dataset, 2004-2011*, version 11-2022, released November 1st 2022
+
+Andrabi, T., Daniels, B., Das, J. 2020. Human Capital Accumulation and Disasters: Evidence from the Pakistan Earthquake of 2005. RISE Working Paper Series. 20/039. https://doi.org/10.35489/BSG-RISE-WP_2020/039
+
+Andrabi, Tahir, Jishnu Das, Asim I. Khwaja, Tara Vishwanathan, and Tristan Zajonc. 2007. “Learning and Educational Achievements in Punjab Schools (LEAPS): Insights to Inform the Education Policy Debate.” *Harvard University*.
+
+ASER-Pakistan 2019. (2020). Annual Status of Education Report. [aserpakistan.org/document/aser/2019/reports/national/ASER_National_2019.pdf](http://aserpakistan.org/document/aser/2019/reports/national/ASER_National_2019.pdf)
+
+ASER-Pakistan 2020. (20201. Annual Status of Education Report.
+
+ASER-Pakistan 2021. (2022). Annual Status of Education Report.
+
+CARTO. "Pakistan Districts". CARTO, <https://carto.com/dataset/pakistan_districts>.
+
+Hameed, Maleeha and Razzaque, Ayesha. (2022, September 26). Opinions, Behaviours and Frustrations: Lessons on Teacher Technology Use in Pakistan. Retrieved from <https://edtechhub.org/2022/09/26/opinions-behaviours-and-frustrations-lessons-on-teacher-technology-use-in-pakistan/>
+
+UNESCO. (2017). [unesco.org/news/617-million-children-and-adolescents-not-getting-minimum-reading-and-math](https://en.unesco.org/news/617-million-children-and-adolescents-not-getting-minimum-reading-and-math)
+
+World Bank. (2019). <https://www.worldbank.org/en/topic/education/brief/learning-poverty>

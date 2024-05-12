@@ -17,9 +17,9 @@ More relevant to this project’s context, Pakistan’s primary education system
 
 Low learning levels and within-the-classroom inequality can be attributed to wide-ranging factors. The LEAPS system-level approach prescribes a thorough diagnosis of the learning crisis before offering a solution. This warrants: 1) an identification of the relevant stakeholders in the ecosystem, 2) mapping their linkages and interactions in the student learning process, and 3) an examination of the frictions faced by each in (contributing to) improving the educational quality. The systems-level approach examines the various factors contributing to low learning outcomes rather than imposing a solution through an “input-augmentation” approach (LEAPS, 2007). Many interventions have focused on school-level frictions or constraints such as an overambitious curriculum, lack of financial resources, limited education support services, low teacher quality, misaligned governance mechanisms, etc.
 
-However, we are interested in students’ observable attributes as a determinant of student learning outcomes. Evidence suggests that students from wealthier households were more likely and able to have better learning outcomes, while children from poorer households were at a distinct disadvantage. Not only did they have less guidance and access to educated people in the home to help them learn, but the digital divide also meant they were 55 percent less likely to use technology for learning (Akmal et al., 2020). This variation in parental capability to facilitate learning exacerbates ‘within the classroom’ learning inequality.
+However, we are interested in students’ observable attributes as a determinant of student learning outcomes. Evidence from COVID-19 learning disruption suggests that students from wealthier households were more likely and able to have better learning outcomes, while children from poorer households were at a distinct disadvantage. Not only did they have less guidance and access to educated people in the home to help them learn, but the digital divide also meant they were 55 percent less likely to use technology for learning (Akmal et al., 2020). This variation in parental capability to facilitate learning exacerbates ‘within the classroom’ learning inequality.
 
-We extend this finding to hypothesize that individual student attributes may be correlated with household characteristics, thus impacting student learning outcomes in basic literacy and numeracy. Individual student attributes include beliefs, growth metrics, intrinsic academic motivation, and career aspirations. Additionally, we explore individual student schooling history to determine if that impacts student learning outcomes.
+We extend this finding to hypothesize that individual student attributes may be correlated with household characteristics, thus impacting student learning outcomes in basic literacy and numeracy. For the purpose of our modelling, individual student attributes include beliefs, growth metrics, intrinsic academic motivation, and career aspirations. Additionally, we explore individual student schooling history to determine if that impacts student learning outcomes.
 
 ```{r}
 knitr::include_graphics("/Users/hannahreynolds/Downloads/diagram.png")
@@ -31,13 +31,13 @@ Our main research questions are:
 
 2.  Are there specific attributes that have higher power than others in predicting student learning outcomes?
 
-Findings from this analysis will help identify students with below-average learning outcomes and formulate policy recommendations on interventions to improve educational quality. These interventions may include school-level programs such as foundational learning or targeted instruction programs to tailor support to students behind their grade levels, school grants and loans, and provision of education support services. Additionally, given student attributes correlated with household characteristics are predictive of learning outcomes, another consideration for high-impact interventions would be cash transfers to improve household-level economic status, leading to better learning outcomes and a sustainable change in the students learning trajectory.
+Findings from this analysis will help identify students with below-average learning outcomes and formulate policy recommendations on interventions to improve educational quality. These interventions may include school-level programs such as foundational learning or targeted instruction programs to tailor support to students behind their grade levels, school grants and loans, and provision of education support services. Additionally, given student attributes are correlated with household characteristics and may be predictive of learning outcomes, another consideration for high-impact interventions would be cash transfers to improve household-level economic status. This social protection intervention would lead to better learning outcomes and a sustainable change in the students learning trajectory.
 
 # Data Sources
 
-We have used two datasets from the Learning and Educational Achievements in Pakistan Schools (LEAPS) public database. LEAPS is Pakistan's largest body of education research and one of the largest in any low-income country, with over 20 years of high-impact education research. The LEAPS longitudinal follow-up dataset focuses on 112 villages, 826 schools and 1,807 households from 2004 to 2011 across three districts of the Punjab province – Attock (North), Faisalabad (center), and Rahim Yar Khan (South). The study team selected these districts based on an accepted geographical stratification of the province into North, Center, and South.
+We have used two datasets from the Learning and Educational Achievements in Pakistan Schools (LEAPS) public database. LEAPS is Pakistan's largest body of education research and one of the largest in any low-income country, with over 20 years of high-impact education research. The LEAPS longitudinal follow-up dataset focuses on 112 villages, 826 schools and 1,807 households from 2004 to 2011 across three districts of the Punjab province – Attock (North), Faisalabad (center), and Rahim Yar Khan (South). The study team selected these districts based on an accepted geographical stratification of the province into North, Center, and South (LEAPS, 2007).
 
-In 2003, this study began as a testing exercise in a randomly selected sample of 112 villages from a list of villages in the Punjab province. Each village had at least one existing private school according to the 2000 census of private schools. The remaining four rounds of surveys were conducted between 2004 and 2011.
+In 2003, this study began as a testing exercise in a randomly selected sample of 112 villages from a list of villages in the Punjab province. Each village had at least one existing private school according to the 2000 census of private schools. The remaining four rounds of surveys were conducted between 2004 and 2011 (LEAPS, 2007).
 
 Our project focuses on the school surveys from the last round of data collection in 2011 at the school level. The school surveys entail five components: 1) a school-level roster, 2) a headteacher roster, 3) a teacher roster, 4) a detailed child roster, and 5) a child-level dataset with anonymized identifiers for linkage with other datasets.
 
@@ -48,7 +48,7 @@ The following factors motivated our choice of the specific datasets from the sch
 
 Besides the round-specific dataset from 2011, we use the master student IRT (item response theory) test score dataset given our model predicts test scores based on student characteristics. We accessed the specific datasets of interest from the public database on the [LEAPS website](https://www.leaps.hks.harvard.edu/data/leaps-longitudinal). After downloading the dataset, we saved the dataset on our local computer and added file paths to read and merge the datasets in R, as required.
 
-Additionally, we used geospatial data containing Pakistan’s geographical boundaries at three levels – national, provincial, and district. We sourced this data from the (Environmental Systems Research Institute, Inc.) database and merged it with district-level boundaries from a private website called [CARTO](https://carto.com/dataset/pakistan_districts). Moreover, we used private primary data containing GPS coordinates of a subset of public and private primary schools in the Attock district.
+Additionally, we used geospatial data containing Pakistan’s geographical boundaries at three levels – national, provincial, and district. We sourced this data from from a private website called [CARTO](https://carto.com/dataset/pakistan_districts). Moreover, we used private data containing GPS coordinates of a subset of public and private primary schools from the sample districts. (Please note that the GPS coordinates data must not be shared beyond the purposes of reviewing.)
 
 # Data Wrangling
 
@@ -109,7 +109,7 @@ scores_test <- testing(x = scores_split)
 
 ## Geospatial Analysis of Pakistani Schools
 
-**Map 1** visualizes Pakistan with its provincial and district-level geographical boundaries. The red boundary indicates the Punjab province where the three sample districts and sample schools are located. Province is comparable to a state in Pakistan’s context.
+**Map 1** visualizes Pakistan with its provincial and district-level geographical boundaries. The red boundary indicates the Punjab province where the three sample districts and sample schools are located. Pakistan's rovince is comparable to a state in the US context.
 
 ```{r}
 punjab <- pakistan_district_shape[pakistan_district_shape$province_t == "Punjab", ]
@@ -121,7 +121,7 @@ ggplot() +
   theme_minimal()
 ```
 
-**Map 2** zooms into the Punjab province and identifies the three sample districts. The northern district of Attock is highlighted in red. Faisalabad, highlighted in green, is the central district. Last, our third sample district, highlighted in blue, is in the southern part of Punjab.
+**Map 2** zooms into the Punjab province and identifies the three sample districts. The northern district of Attock is highlighted in red. Faisalabad, highlighted in green, is the central district. Our third sample district in the southern part of Punjab is highlighted in blue.
 
 ```{r}
 desired_districts <- pakistan_district_shape[pakistan_district_shape$districts %in% c("Attock", "Rahim Yar Khan", "Faisalabad"), ]
@@ -133,7 +133,7 @@ ggplot(data = pakistan_district_shape, aes(geometry = geometry)) +
   theme_minimal()
 ```
 
-**Maps 3-5** capture the spread of the sampled schools in the three sample districts of Attock, Faisalabad, and Rahim Yar Khan in the Punjab province.
+**Maps 3-5** capture the spread of the sampled public and private primary schools across the three sample districts of Attock, Faisalabad, and Rahim Yar Khan in the Punjab province.
 
 ```{r}
 attock <- pakistan_district_shape[pakistan_district_shape$districts == "Attock", ]
@@ -890,7 +890,6 @@ math_decision_tree_rmse <- math_decision_tree_fit_rs %>%
   collect_metrics() %>%
   filter(.metric == "rmse")
 
-
 # KNN MAE & RMSE 
 math_knn_metrics <- collect_metrics(math_knn_fit_rs)
 print(math_knn_metrics)
@@ -1329,7 +1328,7 @@ Our analysis aimed to investigate the relationship between individual student at
 
 The results of our analysis shed light on the complex dynamics underlying student learning outcomes in low-income settings, particularly in rural areas of Pakistan. While household incomes serve as crucial predictors of educational attainment, our study suggests that the predictive models developed may not adequately capture the nuanced relationships between student attributes (including household characteristics) and student performance in literacy and numeracy assessments. This highlights the need for further exploration and refinement of modeling techniques to better understand and predict learning outcomes in such contexts.
 
-Moreover, the relatively high RMSE values observed in our models underscore the challenges associated with accurately predicting student test scores based solely on student attributes including household characteristics. This suggests that other factors beyond socioeconomic status may significantly influence educational outcomes, including but not limited to, quality of instruction, access to educational resources, and cultural factors. As mentioned in Section 1. Background, there may be other school-level and political economy factors contributing to poor student learning outcomes.  Therefore, future research endeavors should adopt a more comprehensive approach, considering a broader range of predictors and employing advanced modeling techniques to enhance predictive accuracy.
+Moreover, the relatively high RMSE values observed in our models underscore the challenges associated with accurately predicting student test scores based solely on student attributes including household characteristics. This suggests that other factors beyond socioeconomic status may significantly influence educational outcomes, including but not limited to, quality of instruction, access to educational resources, and cultural factors. As mentioned in Section 1. Background, there may be other school-level and political economy factors contributing to poor student learning outcomes. Therefore, future research endeavors should adopt a more comprehensive approach, considering a broader range of predictors and employing advanced modeling techniques to enhance predictive accuracy.
 
 ## Limitations of Analysis:
 

@@ -9,3 +9,5 @@ We have used two datasets from the Learning and Educational Achievements in Paki
 Additionally, we have used geospatial data containing Pakistan’s geographical boundaries at three levels – national, provincial, and district. We sourced this data from the (Environmental Systems Research Institute, Inc.) database and merged it with district-level boundaries from another website called [CARTO](https://carto.com/dataset/pakistan_districts). Moreover, we also used LEAPS data containing GPS coordinates of sampled schools in the three districts.
 
 The project includes exploratory data analysis for test scores in English, Urdu, and Maths, followed by predictive modelling using linear regression, decision tree, and K-Nearest Neighbors methods for test scores in each of the three subjects.
+
+The final product can be found here: https://hannahreynolds1.github.io/finalproject/ 
